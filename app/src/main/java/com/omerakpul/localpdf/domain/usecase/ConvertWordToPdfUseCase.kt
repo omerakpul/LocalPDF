@@ -1,10 +1,15 @@
 package com.omerakpul.localpdf.domain.usecase
 
+import android.net.Uri
+import com.omerakpul.localpdf.data.service.PdfService
+import java.io.File
 import javax.inject.Inject
 
 class ConvertWordToPdfUseCase @Inject constructor(
-    // TODO: Add dependencies (POI service, PDFBox service, repository)
+    private val pdfService: PdfService
 ) {
-    // TODO: suspend operator fun invoke(wordFile: Uri)
+    suspend operator fun invoke(wordUri: Uri): File {
+        return pdfService.convertWordToPdf(wordUri)
+    }
 }
 

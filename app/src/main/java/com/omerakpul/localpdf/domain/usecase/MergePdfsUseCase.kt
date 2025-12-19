@@ -1,10 +1,15 @@
 package com.omerakpul.localpdf.domain.usecase
 
+import android.net.Uri
+import com.omerakpul.localpdf.data.service.PdfService
+import java.io.File
 import javax.inject.Inject
 
 class MergePdfsUseCase @Inject constructor(
-    // TODO: Add dependencies (PDFBox service, repository)
+    private val pdfService: PdfService
 ) {
-    // TODO: suspend operator fun invoke(pdfs: List<Uri>)
+    suspend operator fun invoke(pdfs: List<Uri>) : File {
+        return pdfService.mergePdfs(pdfs)
+    }
 }
 
