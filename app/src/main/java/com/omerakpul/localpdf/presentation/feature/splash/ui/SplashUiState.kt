@@ -1,6 +1,7 @@
 package com.omerakpul.localpdf.presentation.feature.splash.ui
 
 data class SplashUiState(
-    // TODO: Add state properties
+    val isLoading: Boolean = true,
+    val animationPhase: Int = 0,
+    val navigateToHome: Boolean = false
 )
-

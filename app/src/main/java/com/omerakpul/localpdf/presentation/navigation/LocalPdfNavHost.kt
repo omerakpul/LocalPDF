@@ -4,6 +4,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import com.omerakpul.localpdf.presentation.feature.splash.screen.SplashScreen
 
 @Composable
 fun LocalPdfNavHost() {
@@ -14,7 +15,13 @@ fun LocalPdfNavHost() {
         startDestination = Splash
     ) {
         composable<Splash> {
-            // TODO: SplashScreen()
+            SplashScreen(
+                onNavigateToHome = {
+                    navController.navigate(Home) {
+                        popUpTo(Splash) { inclusive = true }
+                    }
+                }
+            )
         }
 
         composable<Home> {
