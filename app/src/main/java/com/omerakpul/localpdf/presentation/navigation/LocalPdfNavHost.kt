@@ -12,7 +12,7 @@ fun LocalPdfNavHost() {
 
     NavHost(
         navController = navController,
-        startDestination = Splash
+        startDestination = Home
     ) {
         composable<Splash> {
             SplashScreen(

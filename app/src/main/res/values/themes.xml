@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-
-    <style name="Theme.LocalPDF" parent="android:Theme.Material.Light.NoActionBar" />
+    <style name="Theme.LocalPDF" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowSplashScreenBackground">@color/white</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/lpdflogo</item>
+        <item name="android:windowSplashScreenAnimationDuration">500</item>
+    </style>
 </resources>
