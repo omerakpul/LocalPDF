@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">LocalPDF</string>
+    <string name="app_subtitle">Çevrimdışı Araçlar</string>
+
+    <!-- Search -->
+    <string name="search_hint">Araç veya dosya ara…</string>
+
+    <!-- Quick Actions -->
+    <string name="quick_actions">Hızlı İşlemler</string>
+    <string name="quick_actions_subtitle">Başlamak için bir araç seçin</string>
+
+    <!-- Features -->
+    <string name="merge_pdf">PDF Birleştir</string>
+    <string name="merge_pdf_desc">Dosyaları birleştir</string>
+
+    <string name="split_pdf">PDF Böl</string>
+    <string name="split_pdf_desc">Sayfaları ayır</string>
+
+    <string name="compress_pdf">Sıkıştır</string>
+    <string name="compress_pdf_desc">Boyutu küçült</string>
+
+    <string name="convert_pdf">Dönüştür</string>
+    <string name="convert_pdf_desc">Word\'den PDF\'e</string>
+
+    <string name="photo_to_pdf">Tara</string>
+    <string name="photo_to_pdf_desc">Fotoğraftan PDF</string>
+
+    <string name="sign_pdf">PDF İmzala</string>
+    <string name="sign_pdf_desc">İmza ekle</string>
+
+    <!-- Bottom Navigation -->
+    <string name="nav_home">Ana Sayfa</string>
+    <string name="nav_files">Dosyalar</string>
+    <string name="nav_settings">Ayarlar</string>
+</resources>

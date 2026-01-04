@@ -1,3 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">LocalPDF</string>
+    <string name="app_subtitle">Offline Tools</string>
+
+    <!-- Search -->
+    <string name="search_hint">Search tools or files…</string>
+
+    <!-- Quick Actions -->
+    <string name="quick_actions">Quick Actions</string>
+    <string name="quick_actions_subtitle">Select a tool to get started</string>
+
+    <!-- Features -->
+    <string name="merge_pdf">Merge PDF</string>
+    <string name="merge_pdf_desc">Combine files</string>
+
+    <string name="split_pdf">Split PDF</string>
+    <string name="split_pdf_desc">Extract pages</string>
+
+    <string name="compress_pdf">Compress</string>
+    <string name="compress_pdf_desc">Reduce size</string>
+
+    <string name="convert_pdf">Convert</string>
+    <string name="convert_pdf_desc">Word to PDF</string>
+
+    <string name="photo_to_pdf">Scan</string>
+    <string name="photo_to_pdf_desc">Photo to PDF</string>
+
+    <string name="sign_pdf">Sign PDF</string>
+    <string name="sign_pdf_desc">Add signature</string>
+
+    <!-- Bottom Navigation -->
+    <string name="nav_home">Home</string>
+    <string name="nav_files">Files</string>
+    <string name="nav_settings">Settings</string>
 </resources>

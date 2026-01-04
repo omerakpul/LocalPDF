@@ -4,6 +4,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import com.omerakpul.localpdf.presentation.feature.home.screen.HomeScreen
 import com.omerakpul.localpdf.presentation.feature.splash.screen.SplashScreen
 
 @Composable
@@ -25,7 +26,16 @@ fun LocalPdfNavHost() {
         }
 
         composable<Home> {
-            // TODO: HomeScreen()
+            HomeScreen(
+                onNavigateToMerge = { navController.navigate(Merge) },
+                onNavigateToSplit = { navController.navigate(Split) },
+                onNavigateToCompress = { navController.navigate(Compress) },
+                onNavigateToConvert = { navController.navigate(Convert) },
+                onNavigateToPhotoToPdf = { navController.navigate(PhotoToPdf) },
+                onNavigateToSign = { navController.navigate(Sign) },
+                onNavigateToFiles = { navController.navigate(Files) },
+                onNavigateToSettings = { navController.navigate(Settings) }
+            )
         }
 
         composable<Files> {
