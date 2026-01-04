@@ -37,10 +37,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
 import com.omerakpul.localpdf.R
 import androidx.compose.foundation.layout.Box
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.scale
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.omerakpul.localpdf.presentation.components.BottomNavBar
 import com.omerakpul.localpdf.presentation.components.FeatureCard
+import com.omerakpul.localpdf.presentation.feature.home.viewmodel.HomeViewModel
 import com.omerakpul.localpdf.presentation.theme.*
 
 @Composable
@@ -52,8 +56,11 @@ fun HomeScreen(
     onNavigateToPhotoToPdf: () -> Unit,
     onNavigateToSign: () -> Unit,
     onNavigateToFiles: () -> Unit,
-    onNavigateToSettings: () -> Unit
+    onNavigateToSettings: () -> Unit,
+    viewModel: HomeViewModel = hiltViewModel()
 ) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
     val features = listOf(
         FeatureItem(
             titleResId = R.string.merge_pdf,
