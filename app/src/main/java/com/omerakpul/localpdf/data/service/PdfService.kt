@@ -56,18 +56,23 @@ class PdfService @Inject constructor(
 
     suspend fun mergePdfs(pdfs: List<Uri>): File = withContext(Dispatchers.IO) {
         val mergedDocument = PDDocument()
+        val sourceDocuments = mutableListOf<PDDocument>()
+        val tempFiles = mutableListOf<File>()
 
         try {
+            // Load all documents first and keep them open
             pdfs.forEach { uri ->
                 val file = uriToFile(uri)
+                tempFiles.add(file)
                 val sourceDocument = PDDocument.load(file)
+                sourceDocuments.add(sourceDocument)
+            }
 
-                sourceDocument.pages.forEach { page ->
-                    mergedDocument.addPage(page)
+            // Import pages from all source documents
+            sourceDocuments.forEach { sourceDocument ->
+                for (i in 0 until sourceDocument.numberOfPages) {
+                    mergedDocument.importPage(sourceDocument.getPage(i))
                 }
-
-                sourceDocument.close()
-                file.delete()
             }
 
             val outputFile = File(
@@ -76,12 +81,12 @@ class PdfService @Inject constructor(
             )
 
             mergedDocument.save(outputFile)
-            mergedDocument.close()
-
             outputFile
-        } catch (e: Exception) {
+        } finally {
+            // Close all documents after saving
+            sourceDocuments.forEach { it.close() }
             mergedDocument.close()
-            throw e
+            tempFiles.forEach { it.delete() }
         }
     }
 

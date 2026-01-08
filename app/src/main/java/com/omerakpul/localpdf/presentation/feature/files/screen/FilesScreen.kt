@@ -55,7 +55,7 @@ import com.omerakpul.localpdf.presentation.theme.*
 fun FilesScreen(
     onNavigateToHome: () -> Unit,
     onNavigateToSettings: () -> Unit,
-    onNavigateToDetail: (Int) -> Unit,
+    onNavigateToDetail: (String) -> Unit,
     viewModel: FilesViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -321,7 +321,7 @@ fun FilesScreen(
                         items(uiState.filteredFiles) { pdf ->
                             PdfListItem(
                                 pdf = pdf,
-                                onClick = { onNavigateToDetail(pdf.id) },
+                                onClick = { onNavigateToDetail(pdf.filePath) },
                                 onLongClick = { /* TODO: Select mode */ },
                                 onShare = { /* TODO: Share */ },
                                 onDelete = { /* TODO: Delete */ },

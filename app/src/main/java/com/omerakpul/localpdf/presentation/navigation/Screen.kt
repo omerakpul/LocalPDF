@@ -13,4 +13,4 @@ import kotlinx.serialization.Serializable
 @Serializable object Sign
 @Serializable object Settings
 @Serializable object LicenseDetails
-@Serializable data class Detail(val pdfId: Int)
+@Serializable data class Detail(val pdfPath: String)

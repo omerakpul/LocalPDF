@@ -90,4 +90,18 @@
 
     <!-- Other -->
     <string name="coming_soon">Yakında</string>
+
+    <!-- Merge PDF Screen -->
+    <string name="merge_title">PDF Birleştir</string>
+    <string name="merge_files_count">Birleştirilecek Dosyalar (%d)</string>
+    <string name="merge_clear_all">Tümünü Temizle</string>
+    <string name="merge_add_more">Daha Fazla PDF Ekle</string>
+    <string name="merge_drag_hint">Sıralamak için sürükleyip bırakın</string>
+    <string name="merge_total_size">Toplam Boyut: %s</string>
+    <string name="merge_total_pages">%d sayfa</string>
+    <string name="merge_button">PDF\'leri Birleştir</string>
+    <string name="merge_empty">Seçili PDF yok</string>
+    <string name="merge_empty_subtitle">Birleştirmek için PDF dosyaları ekleyin</string>
+    <string name="merge_success">PDF\'ler başarıyla birleştirildi!</string>
+    <string name="merge_error">PDF birleştirme başarısız</string>
 </resources>

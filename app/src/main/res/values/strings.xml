@@ -90,4 +90,18 @@
 
     <!-- Other -->
     <string name="coming_soon">Coming Soon</string>
+
+    <!-- Merge PDF Screen -->
+    <string name="merge_title">Merge PDFs</string>
+    <string name="merge_files_count">Files to Merge (%d)</string>
+    <string name="merge_clear_all">Clear All</string>
+    <string name="merge_add_more">Add More PDFs</string>
+    <string name="merge_drag_hint">Drag and drop items to reorder</string>
+    <string name="merge_total_size">Total Size: %s</string>
+    <string name="merge_total_pages">%d pages</string>
+    <string name="merge_button">Merge PDFs</string>
+    <string name="merge_empty">No PDFs selected</string>
+    <string name="merge_empty_subtitle">Add PDF files to merge them</string>
+    <string name="merge_success">PDFs merged successfully!</string>
+    <string name="merge_error">Failed to merge PDFs</string>
 </resources>

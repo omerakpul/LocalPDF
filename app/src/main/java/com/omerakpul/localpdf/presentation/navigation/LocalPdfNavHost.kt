@@ -6,6 +6,8 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.omerakpul.localpdf.presentation.feature.files.screen.FilesScreen
 import com.omerakpul.localpdf.presentation.feature.home.screen.HomeScreen
+import com.omerakpul.localpdf.presentation.feature.merge.screen.MergeScreen
+import com.omerakpul.localpdf.presentation.feature.detail.screen.PdfDetailScreen
 import com.omerakpul.localpdf.presentation.feature.settings.screen.LicenseDetailsScreen
 import com.omerakpul.localpdf.presentation.feature.settings.screen.SettingsScreen
 import com.omerakpul.localpdf.presentation.feature.splash.screen.SplashScreen
@@ -49,19 +51,26 @@ fun LocalPdfNavHost() {
                     }
                 },
                 onNavigateToSettings = { navController.navigate(Settings) },
-                onNavigateToDetail = { pdfId ->
-                    navController.navigate(Detail(pdfId = pdfId))
+                onNavigateToDetail = { pdfPath ->
+                    navController.navigate(Detail(pdfPath = pdfPath))
                 }
             )
         }
 
         composable<Detail> { backStackEntry ->
             val detail: Detail = backStackEntry.toRoute()
-            // TODO: DetailScreen(pdfId = detail.pdfId)
+            PdfDetailScreen(
+                onBack = { navController.popBackStack() }
+            )
         }
 
         composable<Merge> {
-            // TODO: MergeScreen()
+            MergeScreen(
+                onBack = { navController.popBackStack() },
+                onNavigateToDetail = { pdfPath ->
+                    navController.navigate(Detail(pdfPath = pdfPath))
+                }
+            )
         }
 
         composable<Split> {
