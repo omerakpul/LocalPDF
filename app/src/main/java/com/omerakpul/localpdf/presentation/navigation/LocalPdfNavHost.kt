@@ -4,7 +4,10 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import com.omerakpul.localpdf.presentation.feature.files.screen.FilesScreen
 import com.omerakpul.localpdf.presentation.feature.home.screen.HomeScreen
+import com.omerakpul.localpdf.presentation.feature.settings.screen.LicenseDetailsScreen
+import com.omerakpul.localpdf.presentation.feature.settings.screen.SettingsScreen
 import com.omerakpul.localpdf.presentation.feature.splash.screen.SplashScreen
 
 @Composable
@@ -39,7 +42,17 @@ fun LocalPdfNavHost() {
         }
 
         composable<Files> {
-            // TODO: FilesScreen()
+            FilesScreen(
+                onNavigateToHome = {
+                    navController.navigate(Home) {
+                        popUpTo(Home) { inclusive = true }
+                    }
+                },
+                onNavigateToSettings = { navController.navigate(Settings) },
+                onNavigateToDetail = { pdfId ->
+                    navController.navigate(Detail(pdfId = pdfId))
+                }
+            )
         }
 
         composable<Detail> { backStackEntry ->
@@ -72,7 +85,25 @@ fun LocalPdfNavHost() {
         }
 
         composable<Settings> {
-            // TODO: SettingsScreen()
+            SettingsScreen(
+                onNavigateToHome = {
+                    navController.navigate(Home) {
+                        popUpTo(Home) { inclusive = true }
+                    }
+                },
+                onNavigateToFiles = {
+                    navController.navigate(Files) {
+                        popUpTo(Home) { inclusive = true }
+                    }
+                },
+                onNavigateToLicenseDetails = { navController.navigate(LicenseDetails) }
+            )
+        }
+
+        composable<LicenseDetails> {
+            LicenseDetailsScreen(
+                onBack = { navController.popBackStack() }
+            )
         }
     }
 }

@@ -33,4 +33,61 @@
     <string name="nav_home">Ana Sayfa</string>
     <string name="nav_files">Dosyalar</string>
     <string name="nav_settings">Ayarlar</string>
+
+    <!-- Files Screen -->
+    <string name="files_title">Dosyalar</string>
+    <string name="files_search_hint">Dosya ara…</string>
+    <string name="files_filter">Filtre</string>
+    <string name="files_sort">Sırala</string>
+    <string name="files_empty">Henüz dosya yok</string>
+    <string name="files_empty_subtitle">PDF dosyalarınız burada görünecek</string>
+
+    <!-- Filters -->
+    <string name="filter_all">Tümü</string>
+    <string name="filter_merged">Birleştirilmiş</string>
+    <string name="filter_split">Bölünmüş</string>
+    <string name="filter_compressed">Sıkıştırılmış</string>
+    <string name="filter_signed">İmzalı</string>
+    <string name="filter_scanned">Taranmış</string>
+    <string name="filter_converted">Dönüştürülmüş</string>
+
+    <!-- Sort -->
+    <string name="sort_recent">Son eklenen</string>
+    <string name="sort_name_asc">İsim A-Z</string>
+    <string name="sort_name_desc">İsim Z-A</string>
+    <string name="sort_size_asc">Boyut ↑</string>
+    <string name="sort_size_desc">Boyut ↓</string>
+
+    <!-- Date Groups -->
+    <string name="date_today">Bugün</string>
+    <string name="date_yesterday">Dün</string>
+    <string name="date_this_week">Bu Hafta</string>
+    <string name="date_older">Daha Eski</string>
+
+    <!-- Actions -->
+    <string name="action_share">Paylaş</string>
+    <string name="action_delete">Sil</string>
+    <string name="action_rename">Yeniden Adlandır</string>
+
+    <!-- Settings Screen -->
+    <string name="settings_title">Ayarlar</string>
+    <string name="settings_appearance">Görünüm</string>
+    <string name="settings_theme">Tema</string>
+    <string name="settings_language">Dil</string>
+    <string name="settings_about">Hakkında</string>
+    <string name="settings_version">Sürüm</string>
+    <string name="settings_licenses">Açık Kaynak Lisansları</string>
+    <string name="settings_contact">İletişim</string>
+
+    <!-- Theme Options -->
+    <string name="theme_system">Sistem</string>
+    <string name="theme_light">Açık</string>
+    <string name="theme_dark">Koyu</string>
+
+    <!-- Language Options -->
+    <string name="language_english">English</string>
+    <string name="language_turkish">Türkçe</string>
+
+    <!-- Other -->
+    <string name="coming_soon">Yakında</string>
 </resources>
