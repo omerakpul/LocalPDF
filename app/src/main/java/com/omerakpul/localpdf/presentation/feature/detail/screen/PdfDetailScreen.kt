@@ -1,6 +1,9 @@
 package com.omerakpul.localpdf.presentation.feature.detail.screen
 
 import android.content.Intent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -33,8 +36,6 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -57,18 +58,20 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.omerakpul.localpdf.presentation.feature.detail.viewmodel.PdfDetailViewModel
 import com.omerakpul.localpdf.presentation.theme.*
+import kotlinx.coroutines.delay
 import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PdfDetailScreen(
     onBack: () -> Unit,
+    onNavigateToFiles: () -> Unit,
     viewModel: PdfDetailViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val snackbarHostState = remember { SnackbarHostState() }
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var showSuccessBanner by remember { mutableStateOf(false) }
 
     // Navigate back after delete
     LaunchedEffect(uiState.isDeleted) {
@@ -77,18 +80,20 @@ fun PdfDetailScreen(
         }
     }
 
-    // Show saved message
-    LaunchedEffect(uiState.isSaved) {
-        if (uiState.isSaved) {
-            snackbarHostState.showSnackbar("Saved to Downloads!")
-            viewModel.resetSaved()
+    // Navigate to Files after save
+    LaunchedEffect(uiState.savedFilePath) {
+        uiState.savedFilePath?.let { _ ->
+            showSuccessBanner = true
+            delay(1500) // Show success banner for 1.5 seconds
+            viewModel.resetSavedState()
+            onNavigateToFiles()
         }
     }
 
     // Show error
     LaunchedEffect(uiState.error) {
         uiState.error?.let {
-            snackbarHostState.showSnackbar(it)
+            // Could show error dialog here if needed
             viewModel.clearError()
         }
     }
@@ -130,147 +135,183 @@ fun PdfDetailScreen(
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = BackgroundColor)
             )
-        },
-        snackbarHost = { SnackbarHost(snackbarHostState) }
+        }
     ) { paddingValues ->
-        if (uiState.isLoading) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(BackgroundColor)
-                    .padding(paddingValues),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator(color = PrimaryRed)
-            }
-        } else {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(BackgroundColor)
-                    .padding(paddingValues)
-                    .padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                // Success icon
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(BackgroundColor)
+                .padding(paddingValues)
+        ) {
+            if (uiState.isLoading) {
                 Box(
-                    modifier = Modifier
-                        .size(100.dp)
-                        .clip(RoundedCornerShape(50.dp))
-                        .background(PrimaryRed.copy(alpha = 0.1f)),
+                    modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.CheckCircle,
-                        contentDescription = null,
-                        modifier = Modifier.size(60.dp),
-                        tint = PrimaryRed
-                    )
+                    CircularProgressIndicator(color = PrimaryRed)
                 }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Text(
-                    text = "PDF Created Successfully!",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = TextPrimary
-                )
-
-                Spacer(modifier = Modifier.height(32.dp))
-
-                // File name input
-                OutlinedTextField(
-                    value = uiState.fileName,
-                    onValueChange = { viewModel.updateFileName(it) },
-                    label = { Text("File Name") },
-                    trailingIcon = {
-                        Icon(Icons.Default.Edit, contentDescription = null, tint = TextSecondary)
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = PrimaryRed,
-                        unfocusedBorderColor = TextSecondary.copy(alpha = 0.5f),
-                        focusedLabelColor = PrimaryRed,
-                        unfocusedLabelColor = TextSecondary,
-                        cursorColor = PrimaryRed,
-                        focusedTextColor = TextPrimary,
-                        unfocusedTextColor = TextPrimary
-                    )
-                )
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // File info card
+            } else {
                 Column(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(CardBackground)
-                        .padding(16.dp)
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
+                    // Success icon
+                    Box(
+                        modifier = Modifier
+                            .size(100.dp)
+                            .clip(RoundedCornerShape(50.dp))
+                            .background(PrimaryRed.copy(alpha = 0.1f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CheckCircle,
+                            contentDescription = null,
+                            modifier = Modifier.size(60.dp),
+                            tint = PrimaryRed
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
                     Text(
-                        text = "File Information",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.SemiBold,
+                        text = "PDF Created Successfully!",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
                         color = TextPrimary
                     )
+
+                    Spacer(modifier = Modifier.height(32.dp))
+
+                    // File name input
+                    OutlinedTextField(
+                        value = uiState.fileName,
+                        onValueChange = { viewModel.updateFileName(it) },
+                        label = { Text("File Name") },
+                        trailingIcon = {
+                            Icon(Icons.Default.Edit, contentDescription = null, tint = TextSecondary)
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = PrimaryRed,
+                            unfocusedBorderColor = TextSecondary.copy(alpha = 0.5f),
+                            focusedLabelColor = PrimaryRed,
+                            unfocusedLabelColor = TextSecondary,
+                            cursorColor = PrimaryRed,
+                            focusedTextColor = TextPrimary,
+                            unfocusedTextColor = TextPrimary
+                        )
+                    )
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // File info card
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(CardBackground)
+                            .padding(16.dp)
+                    ) {
+                        Text(
+                            text = "File Information",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = TextPrimary
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        InfoRow("Size", formatFileSize(uiState.fileSize))
+                        InfoRow("Pages", "${uiState.pageCount}")
+                        InfoRow("Created", uiState.createdDate)
+                    }
+
+                    Spacer(modifier = Modifier.weight(1f))
+
+                    // Action buttons
+                    Button(
+                        onClick = { viewModel.saveToDownloads() },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = SuccessGreen)
+                    ) {
+                        Icon(Icons.Default.Save, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Save to Downloads")
+                    }
+
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    InfoRow("Size", formatFileSize(uiState.fileSize))
-                    InfoRow("Pages", "${uiState.pageCount}")
-                    InfoRow("Created", uiState.createdDate)
+                    OutlinedButton(
+                        onClick = {
+                            val file = File(uiState.filePath)
+                            val contentUri = FileProvider.getUriForFile(
+                                context,
+                                "${context.packageName}.provider",
+                                file
+                            )
+                            val intent = Intent(Intent.ACTION_SEND).apply {
+                                type = "application/pdf"
+                                putExtra(Intent.EXTRA_STREAM, contentUri)
+                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                            }
+                            context.startActivity(Intent.createChooser(intent, "Share PDF"))
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(Icons.Default.Share, contentDescription = null, tint = PrimaryRed)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Share", color = PrimaryRed)
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    TextButton(
+                        onClick = { showDeleteDialog = true },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Default.Delete, contentDescription = null, tint = PrimaryRed)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Delete", color = PrimaryRed)
+                    }
                 }
+            }
 
-                Spacer(modifier = Modifier.weight(1f))
-
-                // Action buttons
-                Button(
-                    onClick = { viewModel.saveToDownloads() },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryRed)
+            // Success Banner Overlay
+            AnimatedVisibility(
+                visible = showSuccessBanner,
+                enter = fadeIn(),
+                exit = fadeOut(),
+                modifier = Modifier.align(Alignment.Center)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(SuccessGreen.copy(alpha = 0.95f))
+                        .padding(horizontal = 32.dp, vertical = 24.dp),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Icon(Icons.Default.Save, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Save to Downloads")
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                OutlinedButton(
-                    onClick = {
-                        val file = File(uiState.filePath)
-                        val contentUri = FileProvider.getUriForFile(
-                            context,
-                            "${context.packageName}.provider",
-                            file
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CheckCircle,
+                            contentDescription = null,
+                            tint = CardBackground,
+                            modifier = Modifier.size(28.dp)
                         )
-                        val intent = Intent(Intent.ACTION_SEND).apply {
-                            type = "application/pdf"
-                            putExtra(Intent.EXTRA_STREAM, contentUri)
-                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                        }
-                        context.startActivity(Intent.createChooser(intent, "Share PDF"))
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Icon(Icons.Default.Share, contentDescription = null, tint = PrimaryRed)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Share", color = PrimaryRed)
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                TextButton(
-                    onClick = { showDeleteDialog = true },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Icon(Icons.Default.Delete, contentDescription = null, tint = TextSecondary)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Delete", color = TextSecondary)
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = "Saved to Downloads!",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = CardBackground
+                        )
+                    }
                 }
             }
         }
@@ -297,3 +338,4 @@ private fun formatFileSize(size: Long): String {
         else -> String.format("%.1f MB", size / (1024.0 * 1024.0))
     }
 }
+

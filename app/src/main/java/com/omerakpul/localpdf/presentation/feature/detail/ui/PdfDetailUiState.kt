@@ -8,6 +8,6 @@ data class PdfDetailUiState(
     val createdDate: String = "",
     val isLoading: Boolean = false,
     val error: String? = null,
-    val isSaved: Boolean = false,
+    val savedFilePath: String? = null,
     val isDeleted: Boolean = false
 )

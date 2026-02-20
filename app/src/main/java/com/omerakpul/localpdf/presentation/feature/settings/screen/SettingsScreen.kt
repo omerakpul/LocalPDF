@@ -16,14 +16,20 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.DarkMode
-import androidx.compose.material.icons.outlined.Email
+import androidx.compose.material.icons.outlined.Code
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.Policy
+import androidx.compose.material.icons.outlined.Security
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -32,16 +38,103 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.omerakpul.localpdf.R
 import com.omerakpul.localpdf.presentation.components.BottomNavBar
+import com.omerakpul.localpdf.presentation.feature.settings.ui.AppLanguage
+import com.omerakpul.localpdf.presentation.feature.settings.ui.ThemeMode
+import com.omerakpul.localpdf.presentation.feature.settings.viewmodel.SettingsViewModel
 import com.omerakpul.localpdf.presentation.theme.*
 
 @Composable
 fun SettingsScreen(
     onNavigateToHome: () -> Unit,
     onNavigateToFiles: () -> Unit,
-    onNavigateToLicenseDetails: () -> Unit
+    onNavigateToLicenseDetails: () -> Unit,
+    viewModel: SettingsViewModel = hiltViewModel()
 ) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = androidx.compose.ui.platform.LocalContext.current
+
+    // Theme Dialog
+    if (uiState.showThemeDialog) {
+        AlertDialog(
+            onDismissRequest = { viewModel.hideThemeDialog() },
+            title = { Text(stringResource(R.string.settings_theme), fontWeight = FontWeight.Bold) },
+            text = {
+                Column {
+                    ThemeMode.entries.forEach { mode ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { viewModel.setThemeMode(mode) }
+                                .padding(vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = uiState.themeMode == mode,
+                                onClick = { viewModel.setThemeMode(mode) },
+                                colors = RadioButtonDefaults.colors(selectedColor = PrimaryRed)
+                            )
+                            Text(
+                                text = when (mode) {
+                                    ThemeMode.SYSTEM -> stringResource(R.string.theme_system)
+                                    ThemeMode.LIGHT -> stringResource(R.string.theme_light)
+                                    ThemeMode.DARK -> stringResource(R.string.theme_dark)
+                                },
+                                fontSize = 16.sp,
+                                modifier = Modifier.padding(start = 8.dp)
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { viewModel.hideThemeDialog() }) {
+                    Text(stringResource(R.string.action_cancel), color = PrimaryRed)
+                }
+            }
+        )
+    }
+
+    // Language Dialog
+    if (uiState.showLanguageDialog) {
+        AlertDialog(
+            onDismissRequest = { viewModel.hideLanguageDialog() },
+            title = { Text(stringResource(R.string.settings_language), fontWeight = FontWeight.Bold) },
+            text = {
+                Column {
+                    AppLanguage.entries.forEach { lang ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { viewModel.setLanguage(lang) }
+                                .padding(vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = uiState.language == lang,
+                                onClick = { viewModel.setLanguage(lang) },
+                                colors = RadioButtonDefaults.colors(selectedColor = PrimaryRed)
+                            )
+                            Text(
+                                text = lang.displayName,
+                                fontSize = 16.sp,
+                                modifier = Modifier.padding(start = 8.dp)
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { viewModel.hideLanguageDialog() }) {
+                    Text(stringResource(R.string.action_cancel), color = PrimaryRed)
+                }
+            }
+        )
+    }
+
     Scaffold(
         bottomBar = {
             BottomNavBar(
@@ -95,8 +188,12 @@ fun SettingsScreen(
             SettingsItem(
                 icon = Icons.Outlined.DarkMode,
                 title = stringResource(R.string.settings_theme),
-                subtitle = stringResource(R.string.coming_soon),
-                onClick = { }
+                subtitle = when (uiState.themeMode) {
+                    ThemeMode.SYSTEM -> stringResource(R.string.theme_system)
+                    ThemeMode.LIGHT -> stringResource(R.string.theme_light)
+                    ThemeMode.DARK -> stringResource(R.string.theme_dark)
+                },
+                onClick = { viewModel.showThemeDialog() }
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -104,8 +201,8 @@ fun SettingsScreen(
             SettingsItem(
                 icon = Icons.Outlined.Language,
                 title = stringResource(R.string.settings_language),
-                subtitle = stringResource(R.string.coming_soon),
-                onClick = { }
+                subtitle = uiState.language.displayName,
+                onClick = { viewModel.showLanguageDialog() }
             )
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -132,11 +229,43 @@ fun SettingsScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             SettingsItem(
-                icon = Icons.Outlined.Email,
-                title = stringResource(R.string.settings_contact),
-                subtitle = "contact@localpdf.com",
-                onClick = { }
+                icon = Icons.Outlined.Code,
+                title = stringResource(R.string.settings_github),
+                subtitle = "github.com/omerakpul/LocalPDF",
+                onClick = {
+                    val intent = android.content.Intent(
+                        android.content.Intent.ACTION_VIEW,
+                        android.net.Uri.parse("https://github.com/omerakpul/LocalPDF")
+                    )
+                    context.startActivity(intent)
+                }
             )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // About info card
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(PrimaryRed.copy(alpha = 0.08f))
+                    .padding(16.dp),
+                verticalAlignment = Alignment.Top
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Security,
+                    contentDescription = null,
+                    tint = PrimaryRed,
+                    modifier = Modifier.size(22.dp)
+                )
+                Text(
+                    text = stringResource(R.string.about_local_info),
+                    fontSize = 13.sp,
+                    color = TextSecondary,
+                    lineHeight = 19.sp,
+                    modifier = Modifier.padding(start = 12.dp)
+                )
+            }
 
             Spacer(modifier = Modifier.height(24.dp))
         }

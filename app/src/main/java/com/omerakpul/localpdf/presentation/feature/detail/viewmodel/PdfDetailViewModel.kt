@@ -6,6 +6,8 @@ import android.os.Environment
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.omerakpul.localpdf.domain.model.Pdf
+import com.omerakpul.localpdf.domain.repository.PdfRepository
 import com.omerakpul.localpdf.presentation.feature.detail.ui.PdfDetailUiState
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 import com.tom_roush.pdfbox.pdmodel.PDDocument
@@ -27,6 +29,7 @@ import javax.inject.Inject
 @HiltViewModel
 class PdfDetailViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
+    private val pdfRepository: PdfRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -34,6 +37,7 @@ class PdfDetailViewModel @Inject constructor(
     val uiState: StateFlow<PdfDetailUiState> = _uiState.asStateFlow()
 
     private val pdfPath: String = savedStateHandle.get<String>("pdfPath") ?: ""
+    private val sourceType: String = savedStateHandle.get<String>("sourceType") ?: "UNKNOWN"
 
     init {
         PDFBoxResourceLoader.init(context)
@@ -87,7 +91,7 @@ class PdfDetailViewModel @Inject constructor(
             _uiState.update { it.copy(isLoading = true) }
 
             try {
-                withContext(Dispatchers.IO) {
+                val savedPath = withContext(Dispatchers.IO) {
                     val sourceFile = File(pdfPath)
                     val downloadsDir = Environment.getExternalStoragePublicDirectory(
                         Environment.DIRECTORY_DOWNLOADS
@@ -103,12 +107,25 @@ class PdfDetailViewModel @Inject constructor(
                         arrayOf("application/pdf"),
                         null
                     )
+
+                    // Insert into Room DB so it appears in Files list
+                    val pdf = Pdf(
+                        name = fileName,
+                        filePath = destFile.absolutePath,
+                        fileSize = destFile.length(),
+                        createdAt = System.currentTimeMillis(),
+                        pageCount = _uiState.value.pageCount,
+                        sourceType = try { com.omerakpul.localpdf.domain.model.PdfSourceType.valueOf(sourceType) } catch (e: Exception) { com.omerakpul.localpdf.domain.model.PdfSourceType.UNKNOWN }
+                    )
+                    pdfRepository.insertPdf(pdf)
+
+                    destFile.absolutePath
                 }
 
-                _uiState.update { it.copy(isLoading = false, isSaved = true) }
+                _uiState.update { it.copy(isLoading = false, savedFilePath = savedPath) }
             } catch (e: Exception) {
                 _uiState.update {
-                    it.copy(isLoading = false, error = e.message ?: "Save failed")
+                     it.copy(isLoading = false, error = e.message ?: "Save failed")
                 }
             }
         }
@@ -131,7 +148,7 @@ class PdfDetailViewModel @Inject constructor(
         _uiState.update { it.copy(error = null) }
     }
 
-    fun resetSaved() {
-        _uiState.update { it.copy(isSaved = false) }
+    fun resetSavedState() {
+        _uiState.update { it.copy(savedFilePath = null) }
     }
 }
