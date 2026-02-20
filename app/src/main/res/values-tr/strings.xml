@@ -29,6 +29,9 @@
     <string name="sign_pdf">PDF İmzala</string>
     <string name="sign_pdf_desc">İmza ekle</string>
 
+    <string name="edit_pdf">PDF Düzenle</string>
+    <string name="edit_pdf_desc">Sayfaları düzenle</string>
+
     <!-- Bottom Navigation -->
     <string name="nav_home">Ana Sayfa</string>
     <string name="nav_files">Dosyalar</string>
@@ -68,6 +71,9 @@
     <string name="action_share">Paylaş</string>
     <string name="action_delete">Sil</string>
     <string name="action_rename">Yeniden Adlandır</string>
+    <string name="action_save">Kaydet</string>
+    <string name="action_cancel">İptal</string>
+    <string name="rename_hint">Yeni isim</string>
 
     <!-- Settings Screen -->
     <string name="settings_title">Ayarlar</string>
@@ -77,7 +83,9 @@
     <string name="settings_about">Hakkında</string>
     <string name="settings_version">Sürüm</string>
     <string name="settings_licenses">Açık Kaynak Lisansları</string>
-    <string name="settings_contact">İletişim</string>
+    <string name="settings_github">Kaynak Kod</string>
+    <string name="settings_about_desc">Uygulama Hakkında</string>
+    <string name="about_local_info">Bu uygulama tamamen cihazınızda çalışır. Dosyalarınız hiçbir sunucuya yüklenmez. İşlem süreleri cihazınızın performansına ve dosya boyutuna bağlıdır.</string>
 
     <!-- Theme Options -->
     <string name="theme_system">Sistem</string>
@@ -104,4 +112,74 @@
     <string name="merge_empty_subtitle">Birleştirmek için PDF dosyaları ekleyin</string>
     <string name="merge_success">PDF\'ler başarıyla birleştirildi!</string>
     <string name="merge_error">PDF birleştirme başarısız</string>
+
+    <!-- Compress PDF Screen -->
+    <string name="compress_empty">Seçili PDF yok</string>
+    <string name="compress_empty_subtitle">Sıkıştırmak için bir PDF seçin</string>
+    <string name="compress_select_pdf">PDF Seç</string>
+    <string name="compress_quality">Sıkıştırma Kalitesi</string>
+    <string name="compress_quality_low">Düşük Kalite</string>
+    <string name="compress_quality_medium">Orta Kalite</string>
+    <string name="compress_quality_high">Yüksek Kalite</string>
+    <string name="compress_quality_original">Orijinal</string>
+    <string name="compress_original">Orijinal</string>
+    <string name="compress_estimated">Tahmini</string>
+    <string name="compress_button">PDF\'i Sıkıştır</string>
+
+    <!-- Split PDF Screen -->
+    <string name="split_empty">Seçili PDF yok</string>
+    <string name="split_empty_subtitle">Bölmek için bir PDF seçin</string>
+    <string name="split_select_pdf">PDF Seç</string>
+    <string name="split_mode">Bölme Modu</string>
+    <string name="split_mode_all">Tümünü Ayır</string>
+    <string name="split_mode_range">Sayfa Aralığı</string>
+    <string name="split_mode_select">Sayfa Seç</string>
+    <string name="split_all_info">Bu işlem her sayfa için ayrı bir PDF oluşturacak (%d dosya).</string>
+    <string name="split_from">Başlangıç</string>
+    <string name="split_to">Bitiş</string>
+    <string name="split_range_info">%d ile %d arası sayfalar yeni PDF olarak çıkarılacak</string>
+    <string name="split_selected">%d sayfa seçildi</string>
+    <string name="split_select_all">Tümünü Seç</string>
+    <string name="split_deselect_all">Seçimi Kaldır</string>
+    <string name="split_button">PDF\'i Böl</string>
+
+    <!-- Photo to PDF Screen -->
+    <string name="photo_count">Fotoğraflar (%d)</string>
+    <string name="photo_empty">Fotoğraf seçilmedi</string>
+    <string name="photo_empty_subtitle">PDF oluşturmak için fotoğraf ekleyin</string>
+    <string name="photo_add_more">Fotoğraf Ekle</string>
+    <string name="photo_create_pdf">PDF Oluştur</string>
+
+    <!-- Convert Screen -->
+    <string name="convert_mode">Dönüştürme Modu</string>
+    <string name="convert_word_to_pdf">Word → PDF</string>
+    <string name="convert_pdf_to_word">PDF → Word</string>
+    <string name="convert_empty">Dosya seçilmedi</string>
+    <string name="convert_empty_word_subtitle">PDF\'e dönüştürmek için bir Word belgesi seçin</string>
+    <string name="convert_empty_pdf_subtitle">Word\'e dönüştürmek için bir PDF seçin</string>
+    <string name="convert_select_file">Dosya Seç</string>
+    <string name="convert_button">Dönüştür</string>
+
+    <!-- Sign PDF Screen -->
+    <string name="sign_empty">Seçili PDF yok</string>
+    <string name="sign_empty_subtitle">İmzalamak için bir PDF seçin</string>
+    <string name="sign_select_pdf">PDF Seç</string>
+    <string name="sign_draw_title">İmzanızı Çizin</string>
+    <string name="sign_draw_hint">İmzanızı buraya çizin</string>
+    <string name="sign_clear">Temizle</string>
+    <string name="sign_placement_info">İmza %d. sayfaya yerleştirilecek (sağ alt)</string>
+    <string name="sign_button">PDF\'i İmzala</string>
+
+    <!-- Edit PDF Screen -->
+    <string name="edit_empty">Seçili PDF yok</string>
+    <string name="edit_empty_subtitle">Düzenlemek için bir PDF seçin</string>
+    <string name="edit_select_pdf">PDF Seç</string>
+    <string name="edit_action">Düzenleme İşlemi</string>
+    <string name="edit_delete_pages">Sayfa Sil</string>
+    <string name="edit_rotate_pages">Sayfa Döndür</string>
+    <string name="edit_rotation_angle">Döndürme Açısı</string>
+    <string name="edit_select_pages">Sayfa Seç</string>
+    <string name="edit_delete_info">%d sayfa silinecek</string>
+    <string name="edit_rotate_info">%d sayfa %d° döndürülecek</string>
+    <string name="edit_button">Değişiklikleri Uygula</string>
 </resources>

@@ -80,7 +80,9 @@
     <string name="settings_about">About</string>
     <string name="settings_version">Version</string>
     <string name="settings_licenses">Open Source Licenses</string>
-    <string name="settings_contact">Contact</string>
+    <string name="settings_github">Source Code</string>
+    <string name="settings_about_desc">About This App</string>
+    <string name="about_local_info">This app works entirely on your device. Your files are never uploaded to any server. Processing times depend on your device\'s performance and file size.</string>
 
     <!-- Theme Options -->
     <string name="theme_system">System</string>
@@ -144,4 +146,40 @@
     <string name="photo_empty_subtitle">Add photos to create a PDF</string>
     <string name="photo_add_more">Add Photos</string>
     <string name="photo_create_pdf">Create PDF</string>
+
+    <!-- Convert Screen -->
+    <string name="convert_mode">Conversion Mode</string>
+    <string name="convert_word_to_pdf">Word → PDF</string>
+    <string name="convert_pdf_to_word">PDF → Word</string>
+    <string name="convert_empty">No file selected</string>
+    <string name="convert_empty_word_subtitle">Select a Word document to convert to PDF</string>
+    <string name="convert_empty_pdf_subtitle">Select a PDF to convert to Word</string>
+    <string name="convert_select_file">Select File</string>
+    <string name="convert_button">Convert</string>
+
+    <!-- Sign PDF Screen -->
+    <string name="sign_empty">No PDF selected</string>
+    <string name="sign_empty_subtitle">Select a PDF to sign</string>
+    <string name="sign_select_pdf">Select PDF</string>
+    <string name="sign_draw_title">Draw Your Signature</string>
+    <string name="sign_draw_hint">Draw your signature here</string>
+    <string name="sign_clear">Clear</string>
+    <string name="sign_placement_info">Signature will be placed on page %d (bottom-right)</string>
+    <string name="sign_button">Sign PDF</string>
+
+    <!-- Edit PDF Screen -->
+    <string name="edit_pdf">Edit PDF</string>
+    <string name="edit_pdf_desc">Edit pages</string>
+    <string name="edit_empty">No PDF selected</string>
+    <string name="edit_empty_subtitle">Select a PDF to edit</string>
+    <string name="edit_select_pdf">Select PDF</string>
+    <string name="edit_action">Edit Action</string>
+    <string name="edit_delete_pages">Delete Pages</string>
+    <string name="edit_rotate_pages">Rotate Pages</string>
+    <string name="edit_rotation_angle">Rotation Angle</string>
+    <string name="edit_select_pages">Select Pages</string>
+    <string name="edit_delete_info">%d pages will be deleted</string>
+    <string name="edit_rotate_info">%d pages will be rotated %d°</string>
+    <string name="edit_button">Apply Changes</string>
 </resources>
+
