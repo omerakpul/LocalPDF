@@ -11,6 +11,7 @@ import kotlinx.serialization.Serializable
 @Serializable object Convert
 @Serializable object PhotoToPdf
 @Serializable object Sign
+@Serializable object Edit
 @Serializable object Settings
 @Serializable object LicenseDetails
 @Serializable data class Detail(val pdfPath: String, val sourceType: String = "UNKNOWN")

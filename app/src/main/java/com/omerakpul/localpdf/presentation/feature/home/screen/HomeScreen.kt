@@ -19,6 +19,7 @@ import androidx.compose.material.icons.filled.CallMerge
 import androidx.compose.material.icons.filled.Compress
 import androidx.compose.material.icons.filled.ContentCut
 import androidx.compose.material.icons.filled.Draw
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material3.Scaffold
@@ -55,6 +56,7 @@ fun HomeScreen(
     onNavigateToConvert: () -> Unit,
     onNavigateToPhotoToPdf: () -> Unit,
     onNavigateToSign: () -> Unit,
+    onNavigateToEdit: () -> Unit,
     onNavigateToFiles: () -> Unit,
     onNavigateToSettings: () -> Unit,
     viewModel: HomeViewModel = hiltViewModel()
@@ -109,6 +111,14 @@ fun HomeScreen(
             bgColor = SignColor,
             iconColor = SignIconColor,
             onClick = onNavigateToSign
+        ),
+        FeatureItem(
+            titleResId = R.string.edit_pdf,
+            descResId = R.string.edit_pdf_desc,
+            icon = Icons.Default.Edit,
+            bgColor = MergeColor,
+            iconColor = MergeIconColor,
+            onClick = onNavigateToEdit
         )
     )
 

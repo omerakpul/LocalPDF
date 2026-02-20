@@ -38,6 +38,7 @@ fun LocalPdfNavHost() {
                 onNavigateToConvert = { navController.navigate(Convert) },
                 onNavigateToPhotoToPdf = { navController.navigate(PhotoToPdf) },
                 onNavigateToSign = { navController.navigate(Sign) },
+                onNavigateToEdit = { navController.navigate(Edit) },
                 onNavigateToFiles = { navController.navigate(Files) },
                 onNavigateToSettings = { navController.navigate(Settings) }
             )
@@ -132,7 +133,12 @@ fun LocalPdfNavHost() {
         }
 
         composable<Convert> {
-            // TODO: ConvertScreen()
+            com.omerakpul.localpdf.presentation.feature.convert.screen.ConvertScreen(
+                onBack = { navController.popBackStack() },
+                onNavigateToDetail = { pdfPath ->
+                    navController.navigate(Detail(pdfPath = pdfPath, sourceType = "CONVERTED"))
+                }
+            )
         }
 
         composable<PhotoToPdf> {
@@ -145,7 +151,21 @@ fun LocalPdfNavHost() {
         }
 
         composable<Sign> {
-            // TODO: SignScreen()
+            com.omerakpul.localpdf.presentation.feature.sign.screen.SignPdfScreen(
+                onBack = { navController.popBackStack() },
+                onNavigateToDetail = { pdfPath ->
+                    navController.navigate(Detail(pdfPath = pdfPath, sourceType = "SIGNED"))
+                }
+            )
+        }
+
+        composable<Edit> {
+            com.omerakpul.localpdf.presentation.feature.edit.screen.EditPdfScreen(
+                onBack = { navController.popBackStack() },
+                onNavigateToDetail = { pdfPath ->
+                    navController.navigate(Detail(pdfPath = pdfPath, sourceType = "EDITED"))
+                }
+            )
         }
 
         composable<Settings> {
