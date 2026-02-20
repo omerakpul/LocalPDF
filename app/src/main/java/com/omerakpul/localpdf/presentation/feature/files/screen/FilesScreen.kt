@@ -23,16 +23,22 @@ import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material.icons.outlined.FolderOpen
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -55,7 +61,8 @@ import com.omerakpul.localpdf.presentation.theme.*
 fun FilesScreen(
     onNavigateToHome: () -> Unit,
     onNavigateToSettings: () -> Unit,
-    onNavigateToDetail: (String) -> Unit,
+    onOpenPdf: (String) -> Unit,
+    onSharePdf: (String) -> Unit,
     viewModel: FilesViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -321,17 +328,54 @@ fun FilesScreen(
                         items(uiState.filteredFiles) { pdf ->
                             PdfListItem(
                                 pdf = pdf,
-                                onClick = { onNavigateToDetail(pdf.filePath) },
+                                onClick = { onOpenPdf(pdf.filePath) },
                                 onLongClick = { /* TODO: Select mode */ },
-                                onShare = { /* TODO: Share */ },
-                                onDelete = { /* TODO: Delete */ },
-                                onRename = { /* TODO: Rename */ }
+                                onShare = { onSharePdf(pdf.filePath) },
+                                onDelete = { viewModel.deletePdf(pdf.id, pdf.filePath) },
+                                onRename = { viewModel.showRenameDialog(pdf) }
                             )
                         }
                     }
                 }
             }
         }
+    }
+    
+    // Rename Dialog
+    if (uiState.isRenameDialogVisible && uiState.pdfToRename != null) {
+        var newName by remember(uiState.pdfToRename) { 
+            mutableStateOf(uiState.pdfToRename!!.name.removeSuffix(".pdf")) 
+        }
+        
+        AlertDialog(
+            onDismissRequest = { viewModel.hideRenameDialog() },
+            title = { Text(stringResource(R.string.action_rename)) },
+            text = {
+                OutlinedTextField(
+                    value = newName,
+                    onValueChange = { newName = it },
+                    label = { Text(stringResource(R.string.rename_hint)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        if (newName.isNotBlank()) {
+                            viewModel.renamePdf(uiState.pdfToRename!!, newName)
+                        }
+                    }
+                ) {
+                    Text(stringResource(R.string.action_save))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.hideRenameDialog() }) {
+                    Text(stringResource(R.string.action_cancel))
+                }
+            }
+        )
     }
 }
 

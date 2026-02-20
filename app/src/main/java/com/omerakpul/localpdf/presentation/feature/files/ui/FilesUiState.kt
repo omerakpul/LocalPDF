@@ -11,5 +11,7 @@ data class FilesUiState(
     val selectedFilter: FileFilter = FileFilter.ALL,
     val selectedSort: FileSort = FileSort.RECENT,
     val isFilterMenuVisible: Boolean = false,
-    val isSortMenuVisible: Boolean = false
+    val isSortMenuVisible: Boolean = false,
+    val pdfToRename: Pdf? = null,
+    val isRenameDialogVisible: Boolean = false
 )
