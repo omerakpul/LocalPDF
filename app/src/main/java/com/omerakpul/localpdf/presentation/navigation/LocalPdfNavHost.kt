@@ -44,6 +44,7 @@ fun LocalPdfNavHost() {
         }
 
         composable<Files> {
+            val context = androidx.compose.ui.platform.LocalContext.current
             FilesScreen(
                 onNavigateToHome = {
                     navController.navigate(Home) {
@@ -51,8 +52,40 @@ fun LocalPdfNavHost() {
                     }
                 },
                 onNavigateToSettings = { navController.navigate(Settings) },
-                onNavigateToDetail = { pdfPath ->
-                    navController.navigate(Detail(pdfPath = pdfPath))
+                onOpenPdf = { pdfPath ->
+                    try {
+                        val file = java.io.File(pdfPath)
+                        val uri = androidx.core.content.FileProvider.getUriForFile(
+                            context,
+                            "${context.packageName}.provider",
+                            file
+                        )
+                        val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
+                            setDataAndType(uri, "application/pdf")
+                            addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        }
+                        context.startActivity(intent)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                },
+                onSharePdf = { pdfPath ->
+                    try {
+                        val file = java.io.File(pdfPath)
+                        val uri = androidx.core.content.FileProvider.getUriForFile(
+                            context,
+                            "${context.packageName}.provider",
+                            file
+                        )
+                        val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                            type = "application/pdf"
+                            putExtra(android.content.Intent.EXTRA_STREAM, uri)
+                            addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        }
+                        context.startActivity(android.content.Intent.createChooser(intent, "Share PDF"))
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
                 }
             )
         }
@@ -60,7 +93,12 @@ fun LocalPdfNavHost() {
         composable<Detail> { backStackEntry ->
             val detail: Detail = backStackEntry.toRoute()
             PdfDetailScreen(
-                onBack = { navController.popBackStack() }
+                onBack = { navController.popBackStack() },
+                onNavigateToFiles = {
+                    navController.navigate(Files) {
+                        popUpTo(Home) { inclusive = false }
+                    }
+                }
             )
         }
 
@@ -68,17 +106,29 @@ fun LocalPdfNavHost() {
             MergeScreen(
                 onBack = { navController.popBackStack() },
                 onNavigateToDetail = { pdfPath ->
-                    navController.navigate(Detail(pdfPath = pdfPath))
+                    navController.navigate(Detail(pdfPath = pdfPath, sourceType = "MERGED"))
                 }
             )
         }
 
         composable<Split> {
-            // TODO: SplitScreen()
+            com.omerakpul.localpdf.presentation.feature.split.screen.SplitPdfScreen(
+                onBack = { navController.popBackStack() },
+                onNavigateToFiles = {
+                    navController.navigate(Files) {
+                        popUpTo(Home) { inclusive = false }
+                    }
+                }
+            )
         }
 
         composable<Compress> {
-            // TODO: CompressScreen()
+            com.omerakpul.localpdf.presentation.feature.compress.screen.CompressPdfScreen(
+                onBack = { navController.popBackStack() },
+                onNavigateToDetail = { pdfPath ->
+                    navController.navigate(Detail(pdfPath = pdfPath, sourceType = "COMPRESSED"))
+                }
+            )
         }
 
         composable<Convert> {
@@ -86,7 +136,12 @@ fun LocalPdfNavHost() {
         }
 
         composable<PhotoToPdf> {
-            // TODO: PhotoToPdfScreen()
+            com.omerakpul.localpdf.presentation.feature.phototopdf.screen.PhotoToPdfScreen(
+                onBack = { navController.popBackStack() },
+                onNavigateToDetail = { pdfPath ->
+                    navController.navigate(Detail(pdfPath = pdfPath, sourceType = "SCANNED"))
+                }
+            )
         }
 
         composable<Sign> {

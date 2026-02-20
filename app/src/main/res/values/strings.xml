@@ -68,6 +68,9 @@
     <string name="action_share">Share</string>
     <string name="action_delete">Delete</string>
     <string name="action_rename">Rename</string>
+    <string name="action_save">Save</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="rename_hint">New name</string>
 
     <!-- Settings Screen -->
     <string name="settings_title">Settings</string>
@@ -104,4 +107,41 @@
     <string name="merge_empty_subtitle">Add PDF files to merge them</string>
     <string name="merge_success">PDFs merged successfully!</string>
     <string name="merge_error">Failed to merge PDFs</string>
+
+    <!-- Compress PDF Screen -->
+    <string name="compress_empty">No PDF selected</string>
+    <string name="compress_empty_subtitle">Select a PDF to compress</string>
+    <string name="compress_select_pdf">Select PDF</string>
+    <string name="compress_quality">Compression Quality</string>
+    <string name="compress_quality_low">Low Quality</string>
+    <string name="compress_quality_medium">Medium Quality</string>
+    <string name="compress_quality_high">High Quality</string>
+    <string name="compress_quality_original">Original</string>
+    <string name="compress_original">Original</string>
+    <string name="compress_estimated">Estimated</string>
+    <string name="compress_button">Compress PDF</string>
+
+    <!-- Split PDF Screen -->
+    <string name="split_empty">No PDF selected</string>
+    <string name="split_empty_subtitle">Select a PDF to split</string>
+    <string name="split_select_pdf">Select PDF</string>
+    <string name="split_mode">Split Mode</string>
+    <string name="split_mode_all">Extract All</string>
+    <string name="split_mode_range">Page Range</string>
+    <string name="split_mode_select">Select Pages</string>
+    <string name="split_all_info">This will create %d separate PDF files, one for each page.</string>
+    <string name="split_from">From</string>
+    <string name="split_to">To</string>
+    <string name="split_range_info">Extract pages %d to %d as a new PDF</string>
+    <string name="split_selected">%d pages selected</string>
+    <string name="split_select_all">Select All</string>
+    <string name="split_deselect_all">Deselect All</string>
+    <string name="split_button">Split PDF</string>
+
+    <!-- Photo to PDF Screen -->
+    <string name="photo_count">Photos (%d)</string>
+    <string name="photo_empty">No photos selected</string>
+    <string name="photo_empty_subtitle">Add photos to create a PDF</string>
+    <string name="photo_add_more">Add Photos</string>
+    <string name="photo_create_pdf">Create PDF</string>
 </resources>
