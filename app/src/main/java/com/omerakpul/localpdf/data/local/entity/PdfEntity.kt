@@ -11,5 +11,6 @@ data class PdfEntity(
     val fileSize: Long,
     val createdAt: Long,
     val pageCount: Int? = null,
-    val thumbnailPath: String? = null
+    val thumbnailPath: String? = null,
+    val sourceType: String = "UNKNOWN"
 )

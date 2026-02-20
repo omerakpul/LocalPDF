@@ -2,6 +2,7 @@ package com.omerakpul.localpdf.data.mapper
 
 import com.omerakpul.localpdf.data.local.entity.PdfEntity
 import com.omerakpul.localpdf.domain.model.Pdf
+import com.omerakpul.localpdf.domain.model.PdfSourceType
 
 fun PdfEntity.toDomain(): Pdf = Pdf(
     id = id,
@@ -10,7 +11,8 @@ fun PdfEntity.toDomain(): Pdf = Pdf(
     fileSize = fileSize,
     createdAt = createdAt,
     pageCount = pageCount,
-    thumbnailPath = thumbnailPath
+    thumbnailPath = thumbnailPath,
+    sourceType = try { PdfSourceType.valueOf(sourceType) } catch (e: Exception) { PdfSourceType.UNKNOWN }
 )
 
 fun Pdf.toEntity(): PdfEntity = PdfEntity(
@@ -20,7 +22,8 @@ fun Pdf.toEntity(): PdfEntity = PdfEntity(
     fileSize = fileSize,
     createdAt = createdAt,
     pageCount = pageCount,
-    thumbnailPath = thumbnailPath
+    thumbnailPath = thumbnailPath,
+    sourceType = sourceType.name
 )
 
 fun List<PdfEntity>.toDomainList(): List<Pdf> = map { it.toDomain() }

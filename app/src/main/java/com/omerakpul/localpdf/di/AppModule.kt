@@ -24,7 +24,9 @@ object AppModule {
             context,
             PdfDatabase::class.java,
             "pdf_database"
-        ).build()
+        )
+            .fallbackToDestructiveMigration()
+            .build()
     }
 
     @Provides

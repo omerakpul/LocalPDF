@@ -28,3 +28,4 @@ val SignIconColor = Color(0xFF34A853)
 val TextPrimary = Color.Black
 val TextSecondary = Color.Gray
 val CardBackground = Color.White
+val SuccessGreen = Color(0xFF4CAF50)

@@ -7,7 +7,7 @@ import com.omerakpul.localpdf.data.local.entity.PdfEntity
 
 @Database(
     entities = [PdfEntity::class],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class PdfDatabase : RoomDatabase() {
