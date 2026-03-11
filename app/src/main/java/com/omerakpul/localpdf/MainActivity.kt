@@ -14,6 +14,7 @@ import androidx.compose.runtime.setValue
 import com.omerakpul.localpdf.data.preferences.PreferencesManager
 import com.omerakpul.localpdf.presentation.navigation.LocalPdfNavHost
 import com.omerakpul.localpdf.presentation.theme.LocalPDFTheme
+import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -23,6 +24,7 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var preferencesManager: PreferencesManager
 
+    @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -49,8 +51,10 @@ class MainActivity : ComponentActivity() {
                 else -> isSystemInDarkTheme()
             }
 
+            val windowSizeClass = androidx.compose.material3.windowsizeclass.calculateWindowSizeClass(this)
+            
             LocalPDFTheme(darkTheme = isDarkTheme) {
-                LocalPdfNavHost()
+                LocalPdfNavHost(windowSizeClass = windowSizeClass.widthSizeClass)
             }
         }
     }
