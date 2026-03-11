@@ -77,4 +77,8 @@ class PhotoToPdfViewModel @Inject constructor(
     fun resetSuccess() {
         _uiState.update { it.copy(createSuccess = false, createdPdfUri = null) }
     }
+
+    fun clearError() {
+        _uiState.update { it.copy(error = null) }
+    }
 }
