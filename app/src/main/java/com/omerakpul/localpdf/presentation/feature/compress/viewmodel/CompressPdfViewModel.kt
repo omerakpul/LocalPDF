@@ -88,6 +88,10 @@ class CompressPdfViewModel @Inject constructor(
         _uiState.update { it.copy(compressSuccess = false, compressedPdfUri = null) }
     }
 
+    fun clearError() {
+        _uiState.update { it.copy(error = null) }
+    }
+
     private suspend fun getPdfInfo(uri: Uri): Triple<String, Long, Int> {
         return withContext(Dispatchers.IO) {
             val name = getFileName(uri) ?: "unknown.pdf"

@@ -119,6 +119,10 @@ class EditPdfViewModel @Inject constructor(
         _uiState.update { it.copy(editSuccess = false, editedPdfUri = null) }
     }
 
+    fun clearError() {
+        _uiState.update { it.copy(error = null) }
+    }
+
     private fun deletePages(pdfUri: Uri, pagesToDelete: List<Int>): File {
         val tempFile = File.createTempFile("temp_", ".pdf", context.cacheDir)
         context.contentResolver.openInputStream(pdfUri)?.use { input ->

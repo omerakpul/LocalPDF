@@ -116,6 +116,10 @@ class SignPdfViewModel @Inject constructor(
         _uiState.update { it.copy(signSuccess = false, signedPdfUri = null) }
     }
 
+    fun clearError() {
+        _uiState.update { it.copy(error = null) }
+    }
+
     private fun addSignatureToPdf(pdfUri: Uri): File {
         val state = _uiState.value
 

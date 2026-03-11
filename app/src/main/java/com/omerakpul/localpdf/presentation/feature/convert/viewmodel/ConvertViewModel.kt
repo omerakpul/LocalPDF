@@ -81,6 +81,10 @@ class ConvertViewModel @Inject constructor(
         _uiState.update { it.copy(convertSuccess = false, convertedFileUri = null) }
     }
 
+    fun clearError() {
+        _uiState.update { it.copy(error = null) }
+    }
+
     private fun getFileName(uri: Uri): String? {
         var name: String? = null
         context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->

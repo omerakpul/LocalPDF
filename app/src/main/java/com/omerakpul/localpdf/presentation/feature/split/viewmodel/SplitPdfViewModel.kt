@@ -169,6 +169,10 @@ class SplitPdfViewModel @Inject constructor(
         _uiState.update { it.copy(splitSuccess = false, splitPdfUris = emptyList()) }
     }
 
+    fun clearError() {
+        _uiState.update { it.copy(error = null) }
+    }
+
     private suspend fun getPdfInfo(uri: Uri): Triple<String, Int, Long> {
         return withContext(Dispatchers.IO) {
             val name = getFileName(uri) ?: "unknown.pdf"
