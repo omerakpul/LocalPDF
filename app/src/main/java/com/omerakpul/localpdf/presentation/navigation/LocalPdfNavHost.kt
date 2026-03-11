@@ -1,6 +1,14 @@
 package com.omerakpul.localpdf.presentation.navigation
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
+import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
@@ -11,16 +19,50 @@ import com.omerakpul.localpdf.presentation.feature.detail.screen.PdfDetailScreen
 import com.omerakpul.localpdf.presentation.feature.settings.screen.LicenseDetailsScreen
 import com.omerakpul.localpdf.presentation.feature.settings.screen.SettingsScreen
 import com.omerakpul.localpdf.presentation.feature.splash.screen.SplashScreen
+import com.omerakpul.localpdf.presentation.feature.viewer.screen.PdfViewerScreen
 
 @Composable
-fun LocalPdfNavHost() {
+fun LocalPdfNavHost(windowSizeClass: WindowWidthSizeClass) {
     val navController = rememberNavController()
 
     NavHost(
         navController = navController,
-        startDestination = Home
+        startDestination = Home,
+        // Default: slide + fade for sub-screens (Merge, Split, Detail etc.)
+        enterTransition = {
+            slideIntoContainer(
+                towards = AnimatedContentTransitionScope.SlideDirection.Start,
+                animationSpec = tween(300, easing = FastOutSlowInEasing),
+                initialOffset = { it / 4 }  // only 25% slide — subtle & fast
+            ) + fadeIn(tween(300))
+        },
+        exitTransition = {
+            slideOutOfContainer(
+                towards = AnimatedContentTransitionScope.SlideDirection.Start,
+                animationSpec = tween(300, easing = FastOutSlowInEasing),
+                targetOffset = { it / 4 }
+            ) + fadeOut(tween(150))
+        },
+        popEnterTransition = {
+            slideIntoContainer(
+                towards = AnimatedContentTransitionScope.SlideDirection.End,
+                animationSpec = tween(300, easing = FastOutSlowInEasing),
+                initialOffset = { it / 4 }
+            ) + fadeIn(tween(300))
+        },
+        popExitTransition = {
+            slideOutOfContainer(
+                towards = AnimatedContentTransitionScope.SlideDirection.End,
+                animationSpec = tween(300, easing = FastOutSlowInEasing),
+                targetOffset = { it / 4 }
+            ) + fadeOut(tween(150))
+        }
     ) {
-        composable<Splash> {
+        // --- Splash: no enter, fade out ---
+        composable<Splash>(
+            enterTransition = { EnterTransition.None },
+            exitTransition = { fadeOut(tween(300)) }
+        ) {
             SplashScreen(
                 onNavigateToHome = {
                     navController.navigate(Home) {
@@ -30,8 +72,15 @@ fun LocalPdfNavHost() {
             )
         }
 
-        composable<Home> {
+        // --- Bottom Nav Tabs: cross-fade only ---
+        composable<Home>(
+            enterTransition = { fadeIn(tween(200)) },
+            exitTransition = { fadeOut(tween(200)) },
+            popEnterTransition = { fadeIn(tween(200)) },
+            popExitTransition = { fadeOut(tween(200)) }
+        ) {
             HomeScreen(
+                windowSizeClass = windowSizeClass,
                 onNavigateToMerge = { navController.navigate(Merge) },
                 onNavigateToSplit = { navController.navigate(Split) },
                 onNavigateToCompress = { navController.navigate(Compress) },
@@ -39,36 +88,47 @@ fun LocalPdfNavHost() {
                 onNavigateToPhotoToPdf = { navController.navigate(PhotoToPdf) },
                 onNavigateToSign = { navController.navigate(Sign) },
                 onNavigateToEdit = { navController.navigate(Edit) },
-                onNavigateToFiles = { navController.navigate(Files) },
-                onNavigateToSettings = { navController.navigate(Settings) }
+                onNavigateToFiles = {
+                    navController.navigate(Files) {
+                        popUpTo(Home) { saveState = true }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                },
+                onNavigateToSettings = {
+                    navController.navigate(Settings) {
+                        popUpTo(Home) { saveState = true }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                }
             )
         }
 
-        composable<Files> {
+        composable<Files>(
+            enterTransition = { fadeIn(tween(200)) },
+            exitTransition = { fadeOut(tween(200)) },
+            popEnterTransition = { fadeIn(tween(200)) },
+            popExitTransition = { fadeOut(tween(200)) }
+        ) {
             val context = androidx.compose.ui.platform.LocalContext.current
             FilesScreen(
+                windowSizeClass = windowSizeClass,
                 onNavigateToHome = {
                     navController.navigate(Home) {
                         popUpTo(Home) { inclusive = true }
+                        launchSingleTop = true
                     }
                 },
-                onNavigateToSettings = { navController.navigate(Settings) },
-                onOpenPdf = { pdfPath ->
-                    try {
-                        val file = java.io.File(pdfPath)
-                        val uri = androidx.core.content.FileProvider.getUriForFile(
-                            context,
-                            "${context.packageName}.provider",
-                            file
-                        )
-                        val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
-                            setDataAndType(uri, "application/pdf")
-                            addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                        }
-                        context.startActivity(intent)
-                    } catch (e: Exception) {
-                        e.printStackTrace()
+                onNavigateToSettings = {
+                    navController.navigate(Settings) {
+                        popUpTo(Home) { saveState = true }
+                        launchSingleTop = true
+                        restoreState = true
                     }
+                },
+                onOpenPdf = { pdfPath ->
+                    navController.navigate(PdfViewer(pdfPath = pdfPath))
                 },
                 onSharePdf = { pdfPath ->
                     try {
@@ -91,6 +151,32 @@ fun LocalPdfNavHost() {
             )
         }
 
+        composable<Settings>(
+            enterTransition = { fadeIn(tween(200)) },
+            exitTransition = { fadeOut(tween(200)) },
+            popEnterTransition = { fadeIn(tween(200)) },
+            popExitTransition = { fadeOut(tween(200)) }
+        ) {
+            SettingsScreen(
+                windowSizeClass = windowSizeClass,
+                onNavigateToHome = {
+                    navController.navigate(Home) {
+                        popUpTo(Home) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                },
+                onNavigateToFiles = {
+                    navController.navigate(Files) {
+                        popUpTo(Home) { saveState = true }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                },
+                onNavigateToLicenseDetails = { navController.navigate(LicenseDetails) }
+            )
+        }
+
+        // --- Sub-screens: use default slide+fade from NavHost ---
         composable<Detail> { backStackEntry ->
             val detail: Detail = backStackEntry.toRoute()
             PdfDetailScreen(
@@ -99,6 +185,9 @@ fun LocalPdfNavHost() {
                     navController.navigate(Files) {
                         popUpTo(Home) { inclusive = false }
                     }
+                },
+                onViewPdf = {
+                    navController.navigate(PdfViewer(pdfPath = detail.pdfPath))
                 }
             )
         }
@@ -168,24 +257,16 @@ fun LocalPdfNavHost() {
             )
         }
 
-        composable<Settings> {
-            SettingsScreen(
-                onNavigateToHome = {
-                    navController.navigate(Home) {
-                        popUpTo(Home) { inclusive = true }
-                    }
-                },
-                onNavigateToFiles = {
-                    navController.navigate(Files) {
-                        popUpTo(Home) { inclusive = true }
-                    }
-                },
-                onNavigateToLicenseDetails = { navController.navigate(LicenseDetails) }
+        composable<LicenseDetails> {
+            LicenseDetailsScreen(
+                onBack = { navController.popBackStack() }
             )
         }
 
-        composable<LicenseDetails> {
-            LicenseDetailsScreen(
+        composable<PdfViewer> { backStackEntry ->
+            val viewer: PdfViewer = backStackEntry.toRoute()
+            PdfViewerScreen(
+                pdfPath = viewer.pdfPath,
                 onBack = { navController.popBackStack() }
             )
         }

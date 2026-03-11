@@ -18,15 +18,12 @@ class SplashViewModel @Inject constructor() : ViewModel() {
     }
     private fun startAnimation() {
         viewModelScope.launch {
-            // Faz 1: PDF'ler geliyor
             delay(300)
             _uiState.value = _uiState.value.copy(animationPhase = 1)
 
-            // Faz 2: Logo görünüyor
             delay(1200)
             _uiState.value = _uiState.value.copy(animationPhase = 2)
 
-            // Faz 3: Tamamlandı
             delay(1500)
             _uiState.value = _uiState.value.copy(
                 animationPhase = 3,
