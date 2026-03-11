@@ -182,4 +182,8 @@
     <string name="edit_delete_info">%d sayfa silinecek</string>
     <string name="edit_rotate_info">%d sayfa %d° döndürülecek</string>
     <string name="edit_button">Değişiklikleri Uygula</string>
+
+    <!-- PDF Viewer -->
+    <string name="viewer_page">%d / %d</string>
+    <string name="action_view">PDF\'i Görüntüle</string>
 </resources>

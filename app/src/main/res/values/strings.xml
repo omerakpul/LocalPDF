@@ -181,5 +181,9 @@
     <string name="edit_delete_info">%d pages will be deleted</string>
     <string name="edit_rotate_info">%d pages will be rotated %d°</string>
     <string name="edit_button">Apply Changes</string>
+
+    <!-- PDF Viewer -->
+    <string name="viewer_page">%d / %d</string>
+    <string name="action_view">View PDF</string>
 </resources>
 

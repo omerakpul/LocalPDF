@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -50,6 +51,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -58,6 +60,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.omerakpul.localpdf.presentation.feature.detail.viewmodel.PdfDetailViewModel
 import com.omerakpul.localpdf.presentation.theme.*
+import com.omerakpul.localpdf.R
 import kotlinx.coroutines.delay
 import java.io.File
 
@@ -66,6 +69,7 @@ import java.io.File
 fun PdfDetailScreen(
     onBack: () -> Unit,
     onNavigateToFiles: () -> Unit,
+    onViewPdf: () -> Unit = {},
     viewModel: PdfDetailViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
@@ -231,6 +235,18 @@ fun PdfDetailScreen(
                     Spacer(modifier = Modifier.weight(1f))
 
                     // Action buttons
+                    OutlinedButton(
+                        onClick = onViewPdf,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(Icons.Default.Visibility, contentDescription = null, tint = PrimaryRed)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(stringResource(R.string.action_view), color = PrimaryRed)
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
                     Button(
                         onClick = { viewModel.saveToDownloads() },
                         modifier = Modifier.fillMaxWidth(),

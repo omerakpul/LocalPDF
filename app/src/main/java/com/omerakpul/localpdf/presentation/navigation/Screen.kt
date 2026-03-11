@@ -15,3 +15,4 @@ import kotlinx.serialization.Serializable
 @Serializable object Settings
 @Serializable object LicenseDetails
 @Serializable data class Detail(val pdfPath: String, val sourceType: String = "UNKNOWN")
+@Serializable data class PdfViewer(val pdfPath: String)
