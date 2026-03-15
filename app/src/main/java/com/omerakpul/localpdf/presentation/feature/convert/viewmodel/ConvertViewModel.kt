@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.omerakpul.localpdf.data.service.PdfService
 import com.omerakpul.localpdf.presentation.feature.convert.ui.ConversionMode
 import com.omerakpul.localpdf.presentation.feature.convert.ui.ConvertUiState
+import com.omerakpul.localpdf.domain.util.MemoryUtil
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,7 +21,8 @@ import javax.inject.Inject
 @HiltViewModel
 class ConvertViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val pdfService: PdfService
+    private val pdfService: PdfService,
+    private val memoryUtil: MemoryUtil
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ConvertUiState())
@@ -31,8 +33,19 @@ class ConvertViewModel @Inject constructor(
     }
 
     fun selectFile(uri: Uri) {
-        val name = getFileName(uri) ?: "unknown"
         val size = getFileSize(uri)
+        val maxSize = memoryUtil.getMaxAllowedFileSizeBytes()
+
+        if (size > maxSize) {
+            _uiState.update { current ->
+                current.copy(
+                    error = "File is too large (${memoryUtil.formatSize(size)}). Your device strongly limits processing files above ${memoryUtil.formatSize(maxSize)} for stability."
+                )
+            }
+            return
+        }
+
+        val name = getFileName(uri) ?: "unknown"
         _uiState.update { current ->
             current.copy(
                 selectedFileUri = uri,

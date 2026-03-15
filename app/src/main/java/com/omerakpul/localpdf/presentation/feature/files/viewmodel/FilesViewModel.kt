@@ -78,10 +78,11 @@ class FilesViewModel @Inject constructor(
                 withContext(Dispatchers.IO) {
                     val oldFile = File(pdf.filePath)
                     if (oldFile.exists()) {
-                        val newFileName = if (newName.endsWith(".pdf", ignoreCase = true)) {
+                        val extension = oldFile.extension
+                        val newFileName = if (newName.endsWith(".$extension", ignoreCase = true)) {
                             newName
                         } else {
-                            "$newName.pdf"
+                            "$newName.$extension"
                         }
                         val newFile = File(oldFile.parent, newFileName)
                         if (oldFile.renameTo(newFile)) {

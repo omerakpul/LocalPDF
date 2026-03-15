@@ -2,10 +2,13 @@ package com.omerakpul.localpdf.presentation.feature.phototopdf.viewmodel
 
 import android.net.Uri
 import androidx.lifecycle.ViewModel
+import android.provider.OpenableColumns
 import androidx.lifecycle.viewModelScope
 import com.omerakpul.localpdf.data.service.PdfService
 import com.omerakpul.localpdf.presentation.feature.phototopdf.ui.PhotoToPdfUiState
+import com.omerakpul.localpdf.domain.util.MemoryUtil
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -15,16 +18,52 @@ import javax.inject.Inject
 
 @HiltViewModel
 class PhotoToPdfViewModel @Inject constructor(
-    private val pdfService: PdfService
+    @ApplicationContext private val context: android.content.Context,
+    private val pdfService: PdfService,
+    private val memoryUtil: MemoryUtil
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(PhotoToPdfUiState())
     val uiState: StateFlow<PhotoToPdfUiState> = _uiState.asStateFlow()
 
     fun addPhotos(uris: List<Uri>) {
-        _uiState.update { current ->
-            current.copy(selectedPhotos = current.selectedPhotos + uris)
+        val maxSize = memoryUtil.getMaxAllowedFileSizeBytes()
+        var hasOversizedFile = false
+
+        val validPhotos = uris.filter { uri ->
+            val size = getFileSize(uri)
+            if (size > maxSize) {
+                hasOversizedFile = true
+                false
+            } else {
+                true
+            }
         }
+
+        if (hasOversizedFile) {
+            _uiState.update { current ->
+                current.copy(
+                    error = "One or more photos are too large. Your device strongly limits processing files above ${memoryUtil.formatSize(maxSize)} for stability."
+                )
+            }
+        }
+
+        if (validPhotos.isNotEmpty()) {
+            _uiState.update { current ->
+                current.copy(selectedPhotos = current.selectedPhotos + validPhotos)
+            }
+        }
+    }
+
+    private fun getFileSize(uri: Uri): Long {
+        var size = 0L
+        context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+            val sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE)
+            if (cursor.moveToFirst() && sizeIndex >= 0) {
+                size = cursor.getLong(sizeIndex)
+            }
+        }
+        return size
     }
 
     fun removePhoto(uri: Uri) {

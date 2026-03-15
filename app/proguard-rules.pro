@@ -87,3 +87,6 @@
 -keep class kotlin.UInt { *; }
 -keep class kotlin.UByte { *; }
 -keep class kotlin.UShort { *; }
+
+# Kotlin IO types (prevents ART profile_saver crash on ByteStreamsKt)
+-keep class kotlin.io.** { *; }

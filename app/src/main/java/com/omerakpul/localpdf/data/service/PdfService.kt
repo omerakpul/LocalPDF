@@ -289,17 +289,27 @@ class PdfService @Inject constructor(
 
         try {
             val wordDocument = XWPFDocument()
+            val stripper = PDFTextStripper()
+            stripper.sortByPosition = true
 
-            pdfDocument.pages.forEachIndexed { index, page ->
-                val stripper = PDFTextStripper()
-                stripper.startPage = index + 1
-                stripper.endPage = index + 1
-                val text = stripper.getText(pdfDocument)
+            for (i in 1..pdfDocument.numberOfPages) {
+                stripper.startPage = i
+                stripper.endPage = i
+                
+                val text = try {
+                    stripper.getText(pdfDocument)
+                } catch (e: Exception) {
+                    ""
+                }
 
                 if (text.isNotBlank()) {
-                    val paragraph = wordDocument.createParagraph()
-                    val run = paragraph.createRun()
-                    run.setText(text.trim())
+                    // Clean text from non-printable characters that might cause native issues
+                    val cleanedText = text.replace(Regex("[^\\p{Print}\\r\\n\\t]"), "").trim()
+                    if (cleanedText.isNotEmpty()) {
+                        val paragraph = wordDocument.createParagraph()
+                        val run = paragraph.createRun()
+                        run.setText(cleanedText)
+                    }
                 }
             }
 

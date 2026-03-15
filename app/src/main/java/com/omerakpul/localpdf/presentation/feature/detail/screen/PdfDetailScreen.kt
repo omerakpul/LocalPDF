@@ -128,10 +128,13 @@ fun PdfDetailScreen(
         )
     }
 
+    val isPdf = uiState.filePath.lowercase().endsWith(".pdf")
+    val fileLabel = if (isPdf) "PDF" else "Word"
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("PDF Details", color = TextPrimary) },
+                title = { Text("$fileLabel Details", color = TextPrimary) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = TextPrimary)
@@ -180,7 +183,7 @@ fun PdfDetailScreen(
                     Spacer(modifier = Modifier.height(16.dp))
 
                     Text(
-                        text = "PDF Created Successfully!",
+                        text = "$fileLabel Created Successfully!",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
                         color = TextPrimary
@@ -228,24 +231,27 @@ fun PdfDetailScreen(
                         Spacer(modifier = Modifier.height(12.dp))
 
                         InfoRow("Size", formatFileSize(uiState.fileSize))
-                        InfoRow("Pages", "${uiState.pageCount}")
+                        if (isPdf) {
+                            InfoRow("Pages", "${uiState.pageCount}")
+                        }
                         InfoRow("Created", uiState.createdDate)
                     }
 
                     Spacer(modifier = Modifier.weight(1f))
 
-                    // Action buttons
-                    OutlinedButton(
-                        onClick = onViewPdf,
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Icon(Icons.Default.Visibility, contentDescription = null, tint = PrimaryRed)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(stringResource(R.string.action_view), color = PrimaryRed)
-                    }
+                    if (isPdf) {
+                        OutlinedButton(
+                            onClick = onViewPdf,
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Icon(Icons.Default.Visibility, contentDescription = null, tint = PrimaryRed)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(stringResource(R.string.action_view), color = PrimaryRed)
+                        }
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(12.dp))
+                    }
 
                     Button(
                         onClick = { viewModel.saveToDownloads() },
@@ -268,12 +274,15 @@ fun PdfDetailScreen(
                                 "${context.packageName}.provider",
                                 file
                             )
+                            val extension = file.extension.lowercase()
+                            val mimeType = if (extension == "pdf") "application/pdf" else "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                            
                             val intent = Intent(Intent.ACTION_SEND).apply {
-                                type = "application/pdf"
+                                type = mimeType
                                 putExtra(Intent.EXTRA_STREAM, contentUri)
                                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                             }
-                            context.startActivity(Intent.createChooser(intent, "Share PDF"))
+                            context.startActivity(Intent.createChooser(intent, "Share $fileLabel"))
                         },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp)

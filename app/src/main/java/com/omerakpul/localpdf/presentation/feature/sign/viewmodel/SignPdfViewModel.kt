@@ -14,6 +14,7 @@ import com.tom_roush.pdfbox.pdmodel.PDDocument
 import com.tom_roush.pdfbox.pdmodel.PDPageContentStream
 import com.tom_roush.pdfbox.pdmodel.graphics.image.PDImageXObject
 import com.omerakpul.localpdf.presentation.feature.sign.ui.SignPdfUiState
+import com.omerakpul.localpdf.domain.util.MemoryUtil
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -29,7 +30,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class SignPdfViewModel @Inject constructor(
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val memoryUtil: MemoryUtil
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SignPdfUiState())
@@ -38,6 +40,18 @@ class SignPdfViewModel @Inject constructor(
     fun selectPdf(uri: Uri) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
+                val size = getFileSize(uri)
+                val maxSize = memoryUtil.getMaxAllowedFileSizeBytes()
+
+                if (size > maxSize) {
+                    _uiState.update { current ->
+                        current.copy(
+                            error = "File is too large (${memoryUtil.formatSize(size)}). Your device strongly limits processing files above ${memoryUtil.formatSize(maxSize)} for stability."
+                        )
+                    }
+                    return@withContext
+                }
+
                 val name = getFileName(uri) ?: "unknown.pdf"
                 val pageCount = getPageCount(uri)
                 _uiState.update {
@@ -231,6 +245,17 @@ class SignPdfViewModel @Inject constructor(
             }
         }
         return name
+    }
+
+    private fun getFileSize(uri: Uri): Long {
+        var size = 0L
+        context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+            val sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE)
+            if (cursor.moveToFirst() && sizeIndex >= 0) {
+                size = cursor.getLong(sizeIndex)
+            }
+        }
+        return size
     }
 
     private fun getPageCount(uri: Uri): Int {

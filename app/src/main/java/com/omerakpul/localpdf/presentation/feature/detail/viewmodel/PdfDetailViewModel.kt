@@ -55,11 +55,14 @@ class PdfDetailViewModel @Inject constructor(
                     return@launch
                 }
 
-                val pageCount = withContext(Dispatchers.IO) {
-                    PDDocument.load(file).use { doc ->
-                        doc.numberOfPages
+                val isPdf = file.extension.lowercase() == "pdf"
+                val pageCount = if (isPdf) {
+                    withContext(Dispatchers.IO) {
+                        PDDocument.load(file).use { doc ->
+                            doc.numberOfPages
+                        }
                     }
-                }
+                } else 0
 
                 val dateFormat = SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault())
                 val createdDate = dateFormat.format(Date(file.lastModified()))
@@ -96,7 +99,11 @@ class PdfDetailViewModel @Inject constructor(
                     val downloadsDir = Environment.getExternalStoragePublicDirectory(
                         Environment.DIRECTORY_DOWNLOADS
                     )
-                    val fileName = "${_uiState.value.fileName}.pdf"
+                    
+                    val extension = sourceFile.extension
+                    val mimeType = if (extension.lowercase() == "pdf") "application/pdf" else "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    
+                    val fileName = "${_uiState.value.fileName}.$extension"
                     val destFile = File(downloadsDir, fileName)
                     
                     sourceFile.copyTo(destFile, overwrite = true)
@@ -104,7 +111,7 @@ class PdfDetailViewModel @Inject constructor(
                     MediaScannerConnection.scanFile(
                         context,
                         arrayOf(destFile.absolutePath),
-                        arrayOf("application/pdf"),
+                        arrayOf(mimeType),
                         null
                     )
 

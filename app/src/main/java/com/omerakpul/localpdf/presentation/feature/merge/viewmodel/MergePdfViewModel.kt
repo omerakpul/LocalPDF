@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.omerakpul.localpdf.data.service.PdfService
 import com.omerakpul.localpdf.domain.model.PdfFile
 import com.omerakpul.localpdf.presentation.feature.merge.ui.MergePdfUiState
+import com.omerakpul.localpdf.domain.util.MemoryUtil
 import com.tom_roush.pdfbox.pdmodel.PDDocument
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -23,7 +24,8 @@ import javax.inject.Inject
 @HiltViewModel
 class MergePdfViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val pdfService: PdfService
+    private val pdfService: PdfService,
+    private val memoryUtil: MemoryUtil
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MergePdfUiState())
@@ -31,11 +33,31 @@ class MergePdfViewModel @Inject constructor(
 
     fun addPdfs(uris: List<Uri>) {
         viewModelScope.launch {
+            val maxSize = memoryUtil.getMaxAllowedFileSizeBytes()
+            var hasOversizedFile = false
+
             val newPdfs = uris.mapNotNull { uri ->
-                getPdfInfo(uri)
+                val info = getPdfInfo(uri)
+                if (info != null && info.size > maxSize) {
+                    hasOversizedFile = true
+                    null
+                } else {
+                    info
+                }
             }
-            _uiState.update { current ->
-                current.copy(selectedPdfs = current.selectedPdfs + newPdfs)
+
+            if (hasOversizedFile) {
+                _uiState.update { current ->
+                    current.copy(
+                        error = "One or more files are too large. Your device strongly limits processing files above ${memoryUtil.formatSize(maxSize)} for stability."
+                    )
+                }
+            }
+
+            if (newPdfs.isNotEmpty()) {
+                _uiState.update { current ->
+                    current.copy(selectedPdfs = current.selectedPdfs + newPdfs)
+                }
             }
         }
     }

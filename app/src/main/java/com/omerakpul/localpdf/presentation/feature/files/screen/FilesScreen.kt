@@ -122,8 +122,9 @@ fun FilesScreen(
 
     // Rename Dialog (can live outside the layout structure)
     if (uiState.isRenameDialogVisible && uiState.pdfToRename != null) {
+        val extension = uiState.pdfToRename!!.name.substringAfterLast(".", "pdf")
         var newName by remember(uiState.pdfToRename) {
-            mutableStateOf(uiState.pdfToRename!!.name.removeSuffix(".pdf"))
+            mutableStateOf(uiState.pdfToRename!!.name.substringBeforeLast("."))
         }
 
         AlertDialog(
@@ -135,7 +136,8 @@ fun FilesScreen(
                     onValueChange = { newName = it },
                     label = { Text(stringResource(R.string.rename_hint)) },
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    suffix = { Text(".$extension") }
                 )
             },
             confirmButton = {

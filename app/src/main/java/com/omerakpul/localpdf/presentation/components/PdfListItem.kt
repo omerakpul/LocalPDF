@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material3.DropdownMenu
@@ -49,6 +50,11 @@ fun PdfListItem(
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
 
+    val isPdf = pdf.name.lowercase().endsWith(".pdf")
+    val icon = if (isPdf) Icons.Default.PictureAsPdf else Icons.Default.Description
+    val iconColor = if (isPdf) SplitIconColor else ConvertIconColor
+    val backgroundColor = if (isPdf) SplitColor else ConvertColor
+
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -61,18 +67,18 @@ fun PdfListItem(
             .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // PDF Icon
+        // File Icon
         Box(
             modifier = Modifier
                 .size(48.dp)
                 .clip(RoundedCornerShape(8.dp))
-                .background(SplitColor),
+                .background(backgroundColor),
             contentAlignment = Alignment.Center
         ) {
             Icon(
-                imageVector = Icons.Default.PictureAsPdf,
+                imageVector = icon,
                 contentDescription = null,
-                tint = SplitIconColor,
+                tint = iconColor,
                 modifier = Modifier.size(28.dp)
             )
         }

@@ -11,6 +11,7 @@ import com.omerakpul.localpdf.domain.model.PdfSourceType
 import com.omerakpul.localpdf.domain.repository.PdfRepository
 import com.omerakpul.localpdf.presentation.feature.split.ui.SplitMode
 import com.omerakpul.localpdf.presentation.feature.split.ui.SplitPdfUiState
+import com.omerakpul.localpdf.domain.util.MemoryUtil
 import com.tom_roush.pdfbox.pdmodel.PDDocument
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -28,7 +29,8 @@ import javax.inject.Inject
 class SplitPdfViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val pdfService: PdfService,
-    private val pdfRepository: PdfRepository
+    private val pdfRepository: PdfRepository,
+    private val memoryUtil: MemoryUtil
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SplitPdfUiState())
@@ -37,6 +39,18 @@ class SplitPdfViewModel @Inject constructor(
     fun selectPdf(uri: Uri) {
         viewModelScope.launch {
             val pdfInfo = getPdfInfo(uri)
+            val fileSize = pdfInfo.third
+            val maxSize = memoryUtil.getMaxAllowedFileSizeBytes()
+
+            if (fileSize > maxSize) {
+                _uiState.update { current ->
+                    current.copy(
+                        error = "File is too large (${memoryUtil.formatSize(fileSize)}). Your device strongly limits processing files above ${memoryUtil.formatSize(maxSize)} for stability."
+                    )
+                }
+                return@launch
+            }
+
             _uiState.update { current ->
                 current.copy(
                     selectedPdf = uri,

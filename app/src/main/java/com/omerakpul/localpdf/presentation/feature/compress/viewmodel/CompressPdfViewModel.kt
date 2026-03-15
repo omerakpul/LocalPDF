@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.omerakpul.localpdf.data.service.PdfService
 import com.omerakpul.localpdf.presentation.feature.compress.ui.CompressPdfUiState
+import com.omerakpul.localpdf.domain.util.MemoryUtil
 import com.tom_roush.pdfbox.pdmodel.PDDocument
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -22,7 +23,8 @@ import javax.inject.Inject
 @HiltViewModel
 class CompressPdfViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val pdfService: PdfService
+    private val pdfService: PdfService,
+    private val memoryUtil: MemoryUtil
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CompressPdfUiState())
@@ -31,6 +33,18 @@ class CompressPdfViewModel @Inject constructor(
     fun selectPdf(uri: Uri) {
         viewModelScope.launch {
             val pdfInfo = getPdfInfo(uri)
+            val fileSize = pdfInfo.second
+            val maxSize = memoryUtil.getMaxAllowedFileSizeBytes()
+
+            if (fileSize > maxSize) {
+                _uiState.update { current ->
+                    current.copy(
+                        error = "File is too large (${memoryUtil.formatSize(fileSize)}). Your device strongly limits processing files above ${memoryUtil.formatSize(maxSize)} for stability."
+                    )
+                }
+                return@launch
+            }
+
             _uiState.update { current ->
                 current.copy(
                     selectedPdf = uri,

@@ -9,6 +9,7 @@ import androidx.lifecycle.viewModelScope
 import com.tom_roush.pdfbox.pdmodel.PDDocument
 import com.omerakpul.localpdf.presentation.feature.edit.ui.EditAction
 import com.omerakpul.localpdf.presentation.feature.edit.ui.EditPdfUiState
+import com.omerakpul.localpdf.domain.util.MemoryUtil
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -23,7 +24,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class EditPdfViewModel @Inject constructor(
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val memoryUtil: MemoryUtil
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(EditPdfUiState())
@@ -32,9 +34,21 @@ class EditPdfViewModel @Inject constructor(
     fun selectPdf(uri: Uri) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
+                val size = getFileSize(uri)
+                val maxSize = memoryUtil.getMaxAllowedFileSizeBytes()
+
+                if (size > maxSize) {
+                    _uiState.update { current ->
+                        current.copy(
+                            error = "File is too large (${memoryUtil.formatSize(size)}). Your device strongly limits processing files above ${memoryUtil.formatSize(maxSize)} for stability."
+                        )
+                    }
+                    return@withContext
+                }
+
                 val name = getFileName(uri) ?: "unknown.pdf"
                 val pageCount = getPageCount(uri)
-                val size = getFileSize(uri)
+                
                 _uiState.update {
                     it.copy(
                         selectedPdf = uri,
