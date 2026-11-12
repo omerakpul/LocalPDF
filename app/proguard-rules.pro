@@ -31,6 +31,17 @@
 -dontwarn java.awt.**
 -dontwarn org.osgi.**
 -dontwarn org.apache.logging.**
+# POI logs through log4j-api, which creates its helper classes reflectively. If R8 renames or
+# merges them, Word conversion crashes at class initialisation (InstantiationException).
+-keep class org.apache.logging.log4j.** { *; }
+-keep interface org.apache.logging.log4j.** { *; }
+
+# POI's helper libraries also instantiate classes reflectively (e.g. commons-compress registers its
+# zip extra-field types by class), so R8 must not rename, merge or make them abstract.
+-keep class org.apache.commons.** { *; }
+-keep class com.zaxxer.sparsebits.** { *; }
+-keep class com.graphbuilder.** { *; }
+-dontwarn org.apache.commons.**
 -dontwarn com.graphbuilder.**
 
 # ========================================

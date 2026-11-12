@@ -1,5 +1,6 @@
 package com.omerakpul.localpdf.data.service
 
+import com.tom_roush.pdfbox.util.Matrix
 import com.tom_roush.pdfbox.pdmodel.PDDocument
 import com.tom_roush.pdfbox.pdmodel.PDPage
 import com.tom_roush.pdfbox.pdmodel.PDPageContentStream
@@ -19,28 +20,45 @@ class WordToPdfRenderer(
     private val document: PDDocument,
     private val fonts: Fonts
 ) {
+    /**
+     * Fonts per style. A style font may be missing (null): the regular font is then used with a
+     * synthetic effect ([StyledFont.fauxBold] / [StyledFont.fauxItalic]).
+     */
     class Fonts(
         val regular: PDFont,
-        val bold: PDFont,
-        val italic: PDFont,
-        val boldItalic: PDFont,
+        val bold: PDFont?,
+        val italic: PDFont?,
+        val boldItalic: PDFont?,
         /** false when only the WinAnsi-only standard fonts are available */
         val isUnicode: Boolean
     ) {
-        fun pick(isBold: Boolean, isItalic: Boolean): PDFont = when {
-            isBold && isItalic -> boldItalic
-            isBold -> bold
-            isItalic -> italic
-            else -> regular
+        fun pick(isBold: Boolean, isItalic: Boolean): StyledFont = when {
+            isBold && isItalic -> when {
+                boldItalic != null -> StyledFont(boldItalic)
+                bold != null -> StyledFont(bold, fauxItalic = true)
+                italic != null -> StyledFont(italic, fauxBold = true)
+                else -> StyledFont(regular, fauxBold = true, fauxItalic = true)
+            }
+            isBold -> if (bold != null) StyledFont(bold) else StyledFont(regular, fauxBold = true)
+            isItalic -> if (italic != null) StyledFont(italic) else StyledFont(regular, fauxItalic = true)
+            else -> StyledFont(regular)
         }
     }
+
+    class StyledFont(
+        val font: PDFont,
+        val fauxBold: Boolean = false,
+        val fauxItalic: Boolean = false
+    )
 
     private class Piece(
         val text: String,
         val font: PDFont,
         val size: Float,
         val spaceBefore: Boolean,
-        val isBreak: Boolean = false
+        val isBreak: Boolean = false,
+        val fauxBold: Boolean = false,
+        val fauxItalic: Boolean = false
     ) {
         val width: Float = if (isBreak) 0f else font.getStringWidth(text) / 1000f * size
     }
@@ -119,7 +137,8 @@ class WordToPdfRenderer(
         for (run in paragraph.runs) {
             val sizeValue = run.fontSizeAsDouble
             val size = if (sizeValue != null && sizeValue > 0) sizeValue.toFloat() else baseSize
-            val font = fonts.pick(run.isBold || forceBold, run.isItalic)
+            val styled = fonts.pick(run.isBold || forceBold, run.isItalic)
+            val font = styled.font
             val lines = sanitize(run.text()).split('\n')
 
             lines.forEachIndexed { index, line ->
@@ -132,7 +151,12 @@ class WordToPdfRenderer(
                     if (value[0].isWhitespace()) {
                         pendingSpace = true
                     } else {
-                        pieces.add(Piece(value, font, size, pendingSpace))
+                        pieces.add(
+                            Piece(
+                                value, font, size, pendingSpace,
+                                fauxBold = styled.fauxBold, fauxItalic = styled.fauxItalic
+                            )
+                        )
                         pendingSpace = false
                     }
                 }
@@ -170,7 +194,10 @@ class WordToPdfRenderer(
                 while (rest.isNotEmpty()) {
                     var cut = rest.length
                     while (cut > 1 && Piece(rest.substring(0, cut), piece.font, piece.size, false).width > maxWidth) cut--
-                    val chunk = Piece(rest.substring(0, cut), piece.font, piece.size, false)
+                    val chunk = Piece(
+                        rest.substring(0, cut), piece.font, piece.size, false,
+                        fauxBold = piece.fauxBold, fauxItalic = piece.fauxItalic
+                    )
                     if (current.isNotEmpty()) {
                         lines.add(current)
                         current = mutableListOf()
@@ -198,15 +225,25 @@ class WordToPdfRenderer(
         return width
     }
 
-    private fun drawLine(line: List<Piece>, x: Float, baseline: Float) {
+    private fun drawLine(line: List<Piece>, x0: Float, baseline: Float) {
         if (line.isEmpty()) return
-        stream.beginText()
-        stream.newLineAtOffset(x, baseline)
+        var x = x0
         line.forEachIndexed { i, p ->
+            if (i > 0 && p.spaceBefore) x += spaceWidth(p)
+            val skew = if (p.fauxItalic) 0.21f else 0f
+            stream.beginText()
             stream.setFont(p.font, p.size)
-            stream.showText((if (i > 0 && p.spaceBefore) " " else "") + p.text)
+            stream.setTextMatrix(Matrix(1f, 0f, skew, 1f, x, baseline))
+            stream.showText(p.text)
+            if (p.fauxBold) {
+                // Synthetic bold: draw the text again, shifted by a fraction of the font size.
+                // (Outline rendering modes are ignored by some viewers, overstriking is not.)
+                stream.setTextMatrix(Matrix(1f, 0f, skew, 1f, x + p.size * 0.035f, baseline))
+                stream.showText(p.text)
+            }
+            stream.endText()
+            x += p.width
         }
-        stream.endText()
     }
 
     // ---------------- paragraphs ----------------

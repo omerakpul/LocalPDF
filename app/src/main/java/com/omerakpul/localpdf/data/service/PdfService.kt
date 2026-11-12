@@ -614,12 +614,23 @@ class PdfService @Inject constructor(
      * text styles work. Falls back to the standard Helvetica family when none is available.
      */
     private fun loadFonts(document: PDDocument): WordToPdfRenderer.Fonts {
+        val usedFiles = mutableSetOf<String>()
+
+        /**
+         * Loads the first usable system font. Files that resolve to a font already in use are
+         * skipped: on many devices "DroidSans-Bold.ttf" is just a link to Roboto-Regular.ttf, which
+         * would pass for a bold font while looking regular.
+         */
         fun load(vararg names: String): PDFont? {
             for (name in names) {
                 val file = File("/system/fonts/$name")
                 if (!file.exists()) continue
+                val canonical = runCatching { file.canonicalPath }.getOrDefault(file.absolutePath)
+                if (canonical in usedFiles) continue
                 try {
-                    return PDType0Font.load(document, file)
+                    val font = PDType0Font.load(document, file)
+                    usedFiles.add(canonical)
+                    return font
                 } catch (e: Exception) {
                     // try the next candidate
                 }
@@ -629,17 +640,25 @@ class PdfService @Inject constructor(
 
         val regular = load("Roboto-Regular.ttf", "NotoSans-Regular.ttf", "DroidSans.ttf")
             ?: return WordToPdfRenderer.Fonts(
-                PDType1Font.HELVETICA,
-                PDType1Font.HELVETICA_BOLD,
-                PDType1Font.HELVETICA_OBLIQUE,
-                PDType1Font.HELVETICA_BOLD_OBLIQUE,
+                regular = PDType1Font.HELVETICA,
+                bold = PDType1Font.HELVETICA_BOLD,
+                italic = PDType1Font.HELVETICA_OBLIQUE,
+                boldItalic = PDType1Font.HELVETICA_BOLD_OBLIQUE,
                 isUnicode = false
             )
 
-        val bold = load("Roboto-Bold.ttf", "NotoSans-Bold.ttf", "DroidSans-Bold.ttf") ?: regular
-        val italic = load("Roboto-Italic.ttf", "NotoSans-Italic.ttf") ?: regular
-        val boldItalic = load("Roboto-BoldItalic.ttf", "NotoSans-BoldItalic.ttf") ?: bold
-        return WordToPdfRenderer.Fonts(regular, bold, italic, boldItalic, isUnicode = true)
+        // Many devices ship a single variable Roboto file, so the style files may not exist:
+        // the renderer then fakes bold (overstrike) and italic (slant) on the regular font.
+        val boldFont = load("Roboto-Bold.ttf", "NotoSans-Bold.ttf", "DroidSans-Bold.ttf")
+        val italicFont = load("Roboto-Italic.ttf", "NotoSans-Italic.ttf")
+        val boldItalicFont = load("Roboto-BoldItalic.ttf", "NotoSans-BoldItalic.ttf")
+        return WordToPdfRenderer.Fonts(
+            regular = regular,
+            bold = boldFont,
+            italic = italicFont,
+            boldItalic = boldItalicFont,
+            isUnicode = true
+        )
     }
 
     /**
