@@ -210,5 +210,8 @@
     <string name="detail_save_downloads">Save to Downloads</string>
     <string name="detail_share_title">Share %1$s</string>
     <string name="compress_no_images">This PDF has no compressible images, so its size will barely change.</string>
+    <string name="sign_preview_title">Place Your Signature</string>
+    <string name="sign_preview_hint">Drag to move, pinch to resize</string>
+    <string name="sign_page_of">Page %1$d / %2$d</string>
 </resources>
 

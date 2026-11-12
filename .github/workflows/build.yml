@@ -1,13 +1,24 @@
 name: Build and Test
 
+# Runs on pull requests only (the same commits were already checked before merging),
+# so merging into main does not trigger a second, duplicate build.
 on:
-  push:
-    branches: [ main ]
   pull_request:
+    paths-ignore:
+      - '**.md'
+      - 'LICENSE'
+      - 'screenshots/**'
+  workflow_dispatch:
+
+# A new push to the same PR cancels the older, now-useless run
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -17,13 +28,14 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-          cache: gradle
 
-      - name: Grant execute permission for gradlew
+      # Caches Gradle dependencies and build outputs between runs
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Make gradlew executable
         run: chmod +x gradlew
 
-      - name: Build debug APK
-        run: ./gradlew assembleDebug
-
-      - name: Run unit tests
-        run: ./gradlew testDebugUnitTest
+      # One Gradle invocation: compiles once, runs unit tests and builds the debug APK
+      - name: Build and test
+        run: ./gradlew testDebugUnitTest assembleDebug --console=plain
