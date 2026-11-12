@@ -7,6 +7,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.navigation.compose.NavHost
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.navigation.compose.composable
@@ -22,8 +23,20 @@ import com.omerakpul.localpdf.presentation.feature.splash.screen.SplashScreen
 import com.omerakpul.localpdf.presentation.feature.viewer.screen.PdfViewerScreen
 
 @Composable
-fun LocalPdfNavHost(windowSizeClass: WindowWidthSizeClass) {
+fun LocalPdfNavHost(
+    windowSizeClass: WindowWidthSizeClass,
+    incomingPdfPath: String? = null,
+    onIncomingPdfHandled: () -> Unit = {}
+) {
     val navController = rememberNavController()
+
+    // Open a PDF received from another app ("Open with" / "Share")
+    LaunchedEffect(incomingPdfPath) {
+        incomingPdfPath?.let { path ->
+            navController.navigate(PdfViewer(pdfPath = path))
+            onIncomingPdfHandled()
+        }
+    }
 
     NavHost(
         navController = navController,
