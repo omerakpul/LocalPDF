@@ -3,6 +3,8 @@ package com.omerakpul.localpdf.data.service
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Matrix
+import android.media.ExifInterface
 import android.net.Uri
 import android.os.Environment
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
@@ -10,6 +12,8 @@ import com.tom_roush.pdfbox.pdmodel.PDDocument
 import com.tom_roush.pdfbox.pdmodel.PDPage
 import com.tom_roush.pdfbox.pdmodel.PDPageContentStream
 import com.tom_roush.pdfbox.pdmodel.common.PDRectangle
+import com.tom_roush.pdfbox.pdmodel.font.PDFont
+import com.tom_roush.pdfbox.pdmodel.font.PDType0Font
 import com.tom_roush.pdfbox.pdmodel.font.PDType1Font
 import com.tom_roush.pdfbox.pdmodel.graphics.image.PDImageXObject
 import com.tom_roush.pdfbox.rendering.PDFRenderer
@@ -32,25 +36,76 @@ class PdfService @Inject constructor(
         PDFBoxResourceLoader.init(context)
     }
 
+    private companion object {
+        // Used only when no system Unicode font is available (Helvetica is WinAnsi-only)
+        val TURKISH_FALLBACK = mapOf(
+            'ğ' to 'g', 'Ğ' to 'G', 'ş' to 's', 'Ş' to 'S',
+            'ı' to 'i', 'İ' to 'I'
+        )
+    }
+
     private fun uriToFile(uri: Uri): File {
         val inputStream = context.contentResolver.openInputStream(uri)
+            ?: throw Exception("Dosya açılamadı")
         val file = File.createTempFile("temp_", ".pdf", context.cacheDir)
-        inputStream?.use { input ->
-            file.outputStream().use { output ->
-                input.copyTo(output)
+        try {
+            inputStream.use { input ->
+                file.outputStream().use { output ->
+                    input.copyTo(output)
+                }
             }
+        } catch (e: Exception) {
+            file.delete()
+            throw e
         }
         return file
     }
 
-    private fun uriToBitmap(uri: Uri): Bitmap {
-        val inputStream = context.contentResolver.openInputStream(uri)
-        return BitmapFactory.decodeStream(inputStream) ?: throw Exception("Bitmap oluşturulamadı")
+    /**
+     * Decodes an image with downsampling (to avoid OOM on large photos)
+     * and applies the EXIF orientation so gallery photos are not rotated.
+     */
+    private fun uriToBitmap(uri: Uri, maxDimension: Int = 3000): Bitmap {
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        context.contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, bounds) }
+        var sample = 1
+        while (bounds.outWidth / sample > maxDimension || bounds.outHeight / sample > maxDimension) {
+            sample *= 2
+        }
+
+        val options = BitmapFactory.Options().apply { inSampleSize = sample }
+        val decoded = context.contentResolver.openInputStream(uri)?.use {
+            BitmapFactory.decodeStream(it, null, options)
+        } ?: throw Exception("Bitmap oluşturulamadı")
+
+        val orientation = try {
+            context.contentResolver.openInputStream(uri)?.use {
+                ExifInterface(it).getAttributeInt(
+                    ExifInterface.TAG_ORIENTATION,
+                    ExifInterface.ORIENTATION_NORMAL
+                )
+            } ?: ExifInterface.ORIENTATION_NORMAL
+        } catch (e: Exception) {
+            ExifInterface.ORIENTATION_NORMAL
+        }
+        val degrees = when (orientation) {
+            ExifInterface.ORIENTATION_ROTATE_90 -> 90f
+            ExifInterface.ORIENTATION_ROTATE_180 -> 180f
+            ExifInterface.ORIENTATION_ROTATE_270 -> 270f
+            else -> 0f
+        }
+        if (degrees == 0f) return decoded
+        val rotated = Bitmap.createBitmap(
+            decoded, 0, 0, decoded.width, decoded.height,
+            Matrix().apply { postRotate(degrees) }, true
+        )
+        if (rotated !== decoded) decoded.recycle()
+        return rotated
     }
 
-    private fun bitmapToByteArray(bitmap: Bitmap): ByteArray {
+    private fun bitmapToJpeg(bitmap: Bitmap, quality: Int): ByteArray {
         val stream = ByteArrayOutputStream()
-        bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
+        bitmap.compress(Bitmap.CompressFormat.JPEG, quality, stream)
         return stream.toByteArray()
     }
 
@@ -106,7 +161,7 @@ class PdfService @Inject constructor(
                             val pageIndex = pageNum - 1 // 1.sayfa = index 0
                             if (pageIndex in 0 until sourceDocument.numberOfPages) {
                                 val page = sourceDocument.getPage(pageIndex)
-                                newDocument.addPage(page)
+                                newDocument.importPage(page)
                             }
                         }
                         val outputFile = File(
@@ -130,78 +185,88 @@ class PdfService @Inject constructor(
     suspend fun compressPdf(pdfUri: Uri, quality: Float): File = withContext(Dispatchers.IO) {
         val sourceFile = uriToFile(pdfUri)
         val sourceDocument = PDDocument.load(sourceFile)
+        val compressedDocument = PDDocument()
 
         try {
-            val compressedDocument = PDDocument()
             val renderer = PDFRenderer(sourceDocument)
+            val dpi = (150f * quality).coerceIn(72f, 150f)
+            val jpegQuality = (quality * 100).toInt().coerceIn(30, 90)
+
             sourceDocument.pages.forEachIndexed { index, page ->
-                // sayfayı goruntuye cevir
-                val bitmap = renderer.renderImageWithDPI(index, 150f * quality)
+                // render page to an image
+                val bitmap = renderer.renderImageWithDPI(index, dpi)
+                try {
+                    val newPage = PDPage(page.mediaBox)
+                    compressedDocument.addPage(newPage)
 
-                //yeni sayfa olustur
-                val newPage = PDPage(page.mediaBox)
-                compressedDocument.addPage(newPage)
-
-                //goruntuyu pdf'e ekle
-                val contentStream = PDPageContentStream(compressedDocument, newPage)
-                val image = PDImageXObject.createFromByteArray(
-                    compressedDocument,
-                    bitmapToByteArray(bitmap),
-                    "page_$index"
-                )
-                contentStream.drawImage(
-                    image,
-                    0f,
-                    0f,
-                    newPage.mediaBox.width,
-                    newPage.mediaBox.height
-                )
-                contentStream.close()
-                bitmap.recycle()
+                    val image = PDImageXObject.createFromByteArray(
+                        compressedDocument,
+                        bitmapToJpeg(bitmap, jpegQuality),
+                        "page_$index"
+                    )
+                    PDPageContentStream(compressedDocument, newPage).use { contentStream ->
+                        contentStream.drawImage(
+                            image,
+                            0f,
+                            0f,
+                            newPage.mediaBox.width,
+                            newPage.mediaBox.height
+                        )
+                    }
+                } finally {
+                    bitmap.recycle()
+                }
             }
+
             val outputFile = File(
                 context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS),
                 "compressed_${System.currentTimeMillis()}.pdf"
             )
-
             compressedDocument.save(outputFile)
+            outputFile
+        } finally {
             compressedDocument.close()
             sourceDocument.close()
             sourceFile.delete()
-
-            outputFile
-        } catch (e: Exception) {
-            sourceDocument.close()
-            sourceFile.delete()
-            throw e
         }
-
     }
 
     suspend fun createPdfFromPhotos(photos: List<Uri>): File = withContext(Dispatchers.IO) {
         val document = PDDocument()
 
         try {
-            photos.forEach { photoUri ->
+            val margin = 20f
+            photos.forEachIndexed { index, photoUri ->
                 val bitmap = uriToBitmap(photoUri)
-                val page = PDPage(PDRectangle.A4)
-                document.addPage(page)
+                try {
+                    // Landscape photos get a landscape page
+                    val pageSize = if (bitmap.width > bitmap.height) {
+                        PDRectangle(PDRectangle.A4.height, PDRectangle.A4.width)
+                    } else {
+                        PDRectangle.A4
+                    }
+                    val page = PDPage(pageSize)
+                    document.addPage(page)
 
-                val contentStream = PDPageContentStream(document, page)
-                val image =
-                    PDImageXObject.createFromByteArray(document, bitmapToByteArray(bitmap), "photo")
+                    val image = PDImageXObject.createFromByteArray(
+                        document, bitmapToJpeg(bitmap, 90), "photo_$index"
+                    )
 
-                contentStream.drawImage(
-                    image,
-                    0f,
-                    0f,
-                    page.mediaBox.width,
-                    page.mediaBox.height
-                )
+                    // Fit inside the page keeping the aspect ratio, centered
+                    val availW = pageSize.width - 2 * margin
+                    val availH = pageSize.height - 2 * margin
+                    val scale = minOf(availW / bitmap.width, availH / bitmap.height)
+                    val drawW = bitmap.width * scale
+                    val drawH = bitmap.height * scale
+                    val x = (pageSize.width - drawW) / 2f
+                    val y = (pageSize.height - drawH) / 2f
 
-                contentStream.close()
-                bitmap.recycle()
-
+                    PDPageContentStream(document, page).use { contentStream ->
+                        contentStream.drawImage(image, x, y, drawW, drawH)
+                    }
+                } finally {
+                    bitmap.recycle()
+                }
             }
 
             val outputFile = File(
@@ -210,13 +275,9 @@ class PdfService @Inject constructor(
             )
 
             document.save(outputFile)
-            document.close()
-
             outputFile
-
-        } catch (e: Exception) {
+        } finally {
             document.close()
-            throw e
         }
     }
 
@@ -225,44 +286,99 @@ class PdfService @Inject constructor(
         val document = PDDocument()
 
         try {
-            if (!wordFile.name.endsWith(".docx")) {
-                throw Exception("Sadece .docx dosyaları destekleniyor")
+            val wordDocument = try {
+                FileInputStream(wordFile).use { XWPFDocument(it) }
+            } catch (e: Exception) {
+                throw Exception("Sadece geçerli .docx dosyaları destekleniyor")
             }
 
-            val wordDocument = XWPFDocument(FileInputStream(wordFile))
+            val unicodeFont = loadUnicodeFont(document)
+            val font: PDFont = unicodeFont ?: PDType1Font.HELVETICA
+            val renderable = HashMap<Char, Boolean>()
+            val fontSize = 12f
+            val leading = 15f
+            val margin = 50f
+            val maxWidth = PDRectangle.A4.width - 2 * margin
 
-            val page = PDPage(PDRectangle.A4)
+            fun sanitize(raw: String): String {
+                val sb = StringBuilder()
+                for (c in raw) {
+                    val ch = when {
+                        c == '\t' -> ' '
+                        unicodeFont == null -> TURKISH_FALLBACK[c] ?: c
+                        else -> c
+                    }
+                    val ok = renderable.getOrPut(ch) {
+                        try { font.getStringWidth(ch.toString()); true } catch (e: Exception) { false }
+                    }
+                    sb.append(if (ok) ch else '?')
+                }
+                return sb.toString()
+            }
+
+            fun textWidth(text: String) = font.getStringWidth(text) / 1000f * fontSize
+
+            // Break a paragraph into lines that fit the page width
+            fun wrap(text: String): List<String> {
+                val lines = mutableListOf<String>()
+                var current = StringBuilder()
+                for (word in text.split(' ')) {
+                    var w = word
+                    val candidate = if (current.isEmpty()) w else "$current $w"
+                    if (textWidth(candidate) <= maxWidth) {
+                        current = StringBuilder(candidate)
+                        continue
+                    }
+                    if (current.isNotEmpty()) {
+                        lines.add(current.toString())
+                        current = StringBuilder()
+                    }
+                    // Word longer than a full line: split by characters
+                    while (textWidth(w) > maxWidth && w.length > 1) {
+                        var cut = w.length - 1
+                        while (cut > 1 && textWidth(w.substring(0, cut)) > maxWidth) cut--
+                        lines.add(w.substring(0, cut))
+                        w = w.substring(cut)
+                    }
+                    current.append(w)
+                }
+                lines.add(current.toString())
+                return lines
+            }
+
+            var page = PDPage(PDRectangle.A4)
             document.addPage(page)
-
             var contentStream = PDPageContentStream(document, page)
-            contentStream.beginText()
-            contentStream.setFont(PDType1Font.HELVETICA, 12f)
-            contentStream.newLineAtOffset(50f, page.mediaBox.height - 50f)
-            var yPosition = page.mediaBox.height - 50f
+            var y = page.mediaBox.height - margin
+
+            fun drawLine(line: String) {
+                if (y < margin) {
+                    contentStream.close()
+                    page = PDPage(PDRectangle.A4)
+                    document.addPage(page)
+                    contentStream = PDPageContentStream(document, page)
+                    y = page.mediaBox.height - margin
+                }
+                if (line.isNotEmpty()) {
+                    contentStream.beginText()
+                    contentStream.setFont(font, fontSize)
+                    contentStream.newLineAtOffset(margin, y)
+                    contentStream.showText(line)
+                    contentStream.endText()
+                }
+                y -= leading
+            }
 
             wordDocument.paragraphs.forEach { paragraph ->
                 val text = paragraph.text
-                if (text.isNotBlank()) {
-                    if (yPosition < 50f) {
-                        contentStream.endText()
-                        contentStream.close()
-
-                        val newPage = PDPage(PDRectangle.A4)
-                        document.addPage(newPage)
-                        val newContentStream = PDPageContentStream(document, newPage)
-                        newContentStream.beginText()
-                        newContentStream.setFont(PDType1Font.HELVETICA, 12f)
-                        newContentStream.newLineAtOffset(50f, newPage.mediaBox.height - 50f)
-                        yPosition = newPage.mediaBox.height - 50f
-                        contentStream = newContentStream
+                if (text.isBlank()) {
+                    drawLine("") // keep paragraph spacing
+                } else {
+                    text.split('\n', '\r', '\u000B').forEach { part ->
+                        wrap(sanitize(part)).forEach { drawLine(it) }
                     }
-
-                    contentStream.showText(text)
-                    yPosition -= 15f
-                    contentStream.newLineAtOffset(0f, -15f)
                 }
             }
-            contentStream.endText()
             contentStream.close()
             wordDocument.close()
 
@@ -272,15 +388,30 @@ class PdfService @Inject constructor(
             )
 
             document.save(outputFile)
-            document.close()
-            wordFile.delete()
-
             outputFile
-        } catch (e: Exception) {
+        } finally {
             document.close()
             wordFile.delete()
-            throw e
         }
+    }
+
+    /** Tries common system fonts that cover Turkish/Latin-extended glyphs. */
+    private fun loadUnicodeFont(document: PDDocument): PDFont? {
+        val candidates = listOf(
+            "/system/fonts/Roboto-Regular.ttf",
+            "/system/fonts/NotoSans-Regular.ttf",
+            "/system/fonts/DroidSans.ttf"
+        )
+        for (path in candidates) {
+            val file = File(path)
+            if (!file.exists()) continue
+            try {
+                return PDType0Font.load(document, file)
+            } catch (e: Exception) {
+                // try next candidate
+            }
+        }
+        return null
     }
 
     suspend fun convertPdfToWord(pdfUri: Uri): File = withContext(Dispatchers.IO) {
