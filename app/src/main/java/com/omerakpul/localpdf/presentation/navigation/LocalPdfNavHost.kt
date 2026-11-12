@@ -94,6 +94,13 @@ fun LocalPdfNavHost(
         ) {
             HomeScreen(
                 windowSizeClass = windowSizeClass,
+                onOpenPdf = { path ->
+                    if (path.lowercase().endsWith(".pdf")) {
+                        navController.navigate(PdfViewer(pdfPath = path))
+                    } else {
+                        navController.navigate(Detail(pdfPath = path, sourceType = "UNKNOWN"))
+                    }
+                },
                 onNavigateToMerge = { navController.navigate(Merge) },
                 onNavigateToSplit = { navController.navigate(Split) },
                 onNavigateToCompress = { navController.navigate(Compress) },
