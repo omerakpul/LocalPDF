@@ -1,5 +1,15 @@
 package com.omerakpul.localpdf.presentation.feature.home.screen
 
+import java.util.Locale
+import java.util.Date
+import java.text.SimpleDateFormat
+import com.omerakpul.localpdf.domain.model.Pdf
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.material3.Icon
+import androidx.compose.material.icons.filled.PictureAsPdf
+import androidx.compose.material.icons.filled.Description
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -63,6 +73,7 @@ fun HomeScreen(
     onNavigateToEdit: () -> Unit,
     onNavigateToFiles: () -> Unit,
     onNavigateToSettings: () -> Unit,
+    onOpenPdf: (String) -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -148,6 +159,8 @@ fun HomeScreen(
             HomeContent(
                 features = features,
                 isCompact = true,
+                recentFiles = uiState.recentFiles,
+                onOpenPdf = onOpenPdf,
                 modifier = Modifier.padding(paddingValues)
             )
         }
@@ -168,6 +181,8 @@ fun HomeScreen(
                 HomeContent(
                     features = features,
                     isCompact = false,
+                    recentFiles = uiState.recentFiles,
+                    onOpenPdf = onOpenPdf,
                     modifier = Modifier.padding(paddingValues)
                 )
             }
@@ -179,6 +194,8 @@ fun HomeScreen(
 private fun HomeContent(
     features: List<FeatureItem>,
     isCompact: Boolean,
+    recentFiles: List<Pdf>,
+    onOpenPdf: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -265,8 +282,72 @@ private fun HomeContent(
                     onClick = feature.onClick
                 )
             }
+
+            if (recentFiles.isNotEmpty()) {
+                item(key = "recent_header", span = { GridItemSpan(maxLineSpan) }) {
+                    Text(
+                        text = stringResource(R.string.recent_files),
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = TextPrimary,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
+                items(
+                    items = recentFiles,
+                    key = { "recent_${it.id}" },
+                    span = { GridItemSpan(maxLineSpan) }
+                ) { pdf ->
+                    RecentFileRow(pdf = pdf, onClick = { onOpenPdf(pdf.filePath) })
+                }
+            }
         }
     }
+}
+
+@Composable
+private fun RecentFileRow(pdf: Pdf, onClick: () -> Unit) {
+    val isPdf = pdf.name.lowercase().endsWith(".pdf")
+    val date = remember(pdf.createdAt) {
+        SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault()).format(Date(pdf.createdAt))
+    }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(CardBackground)
+            .clickable(onClick = onClick)
+            .padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = if (isPdf) Icons.Default.PictureAsPdf else Icons.Default.Description,
+            contentDescription = null,
+            tint = PrimaryRed,
+            modifier = Modifier.size(32.dp)
+        )
+        Column(modifier = Modifier.padding(start = 12.dp)) {
+            Text(
+                text = pdf.name,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Medium,
+                color = TextPrimary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = "$date · ${formatSize(pdf.fileSize)}",
+                fontSize = 12.sp,
+                color = TextSecondary
+            )
+        }
+    }
+}
+
+private fun formatSize(size: Long): String = when {
+    size < 1024 -> "$size B"
+    size < 1024 * 1024 -> String.format(Locale.getDefault(), "%.1f KB", size / 1024.0)
+    else -> String.format(Locale.getDefault(), "%.1f MB", size / (1024.0 * 1024.0))
 }
 
 /**

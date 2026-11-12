@@ -235,4 +235,5 @@
     <string name="convert_pdf_to_images">PDF → Görsel</string>
     <string name="convert_empty_images_subtitle">Sayfalarını görsel olarak kaydetmek için bir PDF seçin</string>
     <string name="convert_images_saved">%1$d görsel Pictures/LocalPDF klasörüne kaydedildi</string>
+    <string name="recent_files">Son Dosyalar</string>
 </resources>

@@ -234,5 +234,6 @@
     <string name="convert_pdf_to_images">PDF → Images</string>
     <string name="convert_empty_images_subtitle">Select a PDF to save its pages as images</string>
     <string name="convert_images_saved">%1$d images saved to Pictures/LocalPDF</string>
+    <string name="recent_files">Recent Files</string>
 </resources>
 
