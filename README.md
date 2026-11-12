@@ -58,7 +58,7 @@ You can download the latest APK from the [Releases](../../releases) section and 
 ### Installation
 1. Clone this repository:
 ```bash
-git clone https://github.com/yourusername/LocalPDF.git
+git clone https://github.com/omerakpul/LocalPDF.git
 ```
 2. Open the project in Android Studio.
 3. Build and run the application on an emulator or a physical device.

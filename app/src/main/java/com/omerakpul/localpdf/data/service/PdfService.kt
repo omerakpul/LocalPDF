@@ -15,6 +15,9 @@ import com.tom_roush.pdfbox.pdmodel.common.PDRectangle
 import com.tom_roush.pdfbox.pdmodel.font.PDFont
 import com.tom_roush.pdfbox.pdmodel.font.PDType0Font
 import com.tom_roush.pdfbox.pdmodel.font.PDType1Font
+import com.tom_roush.pdfbox.pdmodel.PDResources
+import com.tom_roush.pdfbox.pdmodel.graphics.form.PDFormXObject
+import com.tom_roush.pdfbox.pdmodel.graphics.image.JPEGFactory
 import com.tom_roush.pdfbox.pdmodel.graphics.image.PDImageXObject
 import com.tom_roush.pdfbox.rendering.PDFRenderer
 import com.tom_roush.pdfbox.text.PDFTextStripper
@@ -182,51 +185,91 @@ class PdfService @Inject constructor(
             }
         }
 
+    /**
+     * Compresses a PDF by recompressing and downscaling its embedded images.
+     * Text, vectors and fonts are untouched, so text stays selectable/searchable.
+     * If the result is not smaller than the source, the original is returned unchanged.
+     */
     suspend fun compressPdf(pdfUri: Uri, quality: Float): File = withContext(Dispatchers.IO) {
         val sourceFile = uriToFile(pdfUri)
-        val sourceDocument = PDDocument.load(sourceFile)
-        val compressedDocument = PDDocument()
+        val document = PDDocument.load(sourceFile)
+        val outputFile = File(
+            context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS),
+            "compressed_${System.currentTimeMillis()}.pdf"
+        )
 
         try {
-            val renderer = PDFRenderer(sourceDocument)
-            val dpi = (150f * quality).coerceIn(72f, 150f)
-            val jpegQuality = (quality * 100).toInt().coerceIn(30, 90)
+            val q = quality.coerceIn(0.1f, 1f)
+            val jpegQuality = (q * 100).toInt().coerceIn(30, 90)
+            val scale = (0.25f + q * 0.75f).coerceAtMost(1f)
 
-            sourceDocument.pages.forEachIndexed { index, page ->
-                // render page to an image
-                val bitmap = renderer.renderImageWithDPI(index, dpi)
-                try {
-                    val newPage = PDPage(page.mediaBox)
-                    compressedDocument.addPage(newPage)
+            val replaced = HashMap<Any, PDImageXObject>()
+            val visited = HashSet<Any>()
 
-                    val image = PDImageXObject.createFromByteArray(
-                        compressedDocument,
-                        bitmapToJpeg(bitmap, jpegQuality),
-                        "page_$index"
-                    )
-                    PDPageContentStream(compressedDocument, newPage).use { contentStream ->
-                        contentStream.drawImage(
-                            image,
-                            0f,
-                            0f,
-                            newPage.mediaBox.width,
-                            newPage.mediaBox.height
+            fun recompress(image: PDImageXObject): PDImageXObject? {
+                if (image.isStencil || image.softMask != null || image.mask != null) return null
+                val key = image.cosObject
+                if (replaced.containsKey(key)) return replaced[key]
+
+                val oldSize = image.stream.length
+                var bitmap: Bitmap? = null
+                var scaled: Bitmap? = null
+                return try {
+                    bitmap = image.image
+                    scaled = if (scale < 1f && bitmap.width > 800) {
+                        Bitmap.createScaledBitmap(
+                            bitmap,
+                            (bitmap.width * scale).toInt().coerceAtLeast(1),
+                            (bitmap.height * scale).toInt().coerceAtLeast(1),
+                            true
                         )
+                    } else bitmap
+                    val jpeg = bitmapToJpeg(scaled, jpegQuality)
+                    if (jpeg.size.toLong() >= oldSize) {
+                        null
+                    } else {
+                        JPEGFactory.createFromByteArray(document, jpeg)
                     }
+                } catch (e: Exception) {
+                    null
+                } catch (e: OutOfMemoryError) {
+                    null
                 } finally {
-                    bitmap.recycle()
+                    if (scaled != null && scaled !== bitmap) scaled.recycle()
+                    bitmap?.recycle()
+                }.also { replaced[key] = it ?: image }
+            }
+
+            fun processResources(resources: PDResources?) {
+                if (resources == null) return
+                for (name in resources.xObjectNames.toList()) {
+                    when (val xObject = resources.getXObject(name)) {
+                        is PDImageXObject -> {
+                            val newImage = recompress(xObject)
+                            if (newImage != null && newImage !== xObject) {
+                                resources.put(name, newImage)
+                            }
+                        }
+                        is PDFormXObject -> {
+                            if (visited.add(xObject.cosObject)) processResources(xObject.resources)
+                        }
+                        else -> {}
+                    }
                 }
             }
 
-            val outputFile = File(
-                context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS),
-                "compressed_${System.currentTimeMillis()}.pdf"
-            )
-            compressedDocument.save(outputFile)
+            document.pages.forEach { processResources(it.resources) }
+            document.save(outputFile)
+
+            if (outputFile.length() >= sourceFile.length()) {
+                sourceFile.copyTo(outputFile, overwrite = true)
+            }
             outputFile
+        } catch (e: Exception) {
+            outputFile.delete()
+            throw e
         } finally {
-            compressedDocument.close()
-            sourceDocument.close()
+            document.close()
             sourceFile.delete()
         }
     }
