@@ -32,7 +32,11 @@ val SuccessGreen = Color(0xFF2E9E5B)
 // ---------------------------------------------------------------------------
 // Surfaces and text (warm neutrals instead of cold greys)
 // ---------------------------------------------------------------------------
-val BackgroundColor: Color get() = themed(0xFFFAF7F5, 0xFF131010)
+/** App background in ARGB; also used for the window so transitions never flash a different colour. */
+const val BACKGROUND_LIGHT = 0xFFFAF7F5L
+const val BACKGROUND_DARK = 0xFF131010L
+
+val BackgroundColor: Color get() = themed(BACKGROUND_LIGHT, BACKGROUND_DARK)
 val CardBackground: Color get() = themed(0xFFFFFFFF, 0xFF1E1A19)
 val OutlineColor: Color get() = themed(0xFFEBE3DF, 0xFF332D2B)
 val TextPrimary: Color get() = themed(0xFF211A19, 0xFFF3EDEB)

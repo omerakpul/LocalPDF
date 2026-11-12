@@ -1,4 +1,10 @@
 package com.omerakpul.localpdf.presentation.navigation
+import androidx.navigation.NavDestination.Companion.hasRoute
+import androidx.navigation.NavBackStackEntry
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
@@ -22,6 +28,22 @@ import com.omerakpul.localpdf.presentation.feature.settings.screen.SettingsScree
 import com.omerakpul.localpdf.presentation.feature.splash.screen.SplashScreen
 import com.omerakpul.localpdf.presentation.feature.viewer.screen.PdfViewerScreen
 
+private const val SLIDE_MS = 320
+private const val FADE_OUT_MS = 90
+private const val FADE_IN_MS = 210
+
+// Material "fade through": the old screen fades out first, then the new one fades in.
+private val fadeThroughOut = fadeOut(tween(FADE_OUT_MS, easing = FastOutLinearInEasing))
+private val fadeThroughIn = fadeIn(
+    tween(FADE_IN_MS, delayMillis = FADE_OUT_MS, easing = LinearOutSlowInEasing)
+)
+
+private fun NavBackStackEntry.isTab(): Boolean =
+    destination.hasRoute<Home>() || destination.hasRoute<Files>() || destination.hasRoute<Settings>()
+
+private fun AnimatedContentTransitionScope<NavBackStackEntry>.isTabSwitch(): Boolean =
+    initialState.isTab() && targetState.isTab()
+
 @Composable
 fun LocalPdfNavHost(
     windowSizeClass: WindowWidthSizeClass,
@@ -41,34 +63,24 @@ fun LocalPdfNavHost(
     NavHost(
         navController = navController,
         startDestination = Home,
-        // Default: slide + fade for sub-screens (Merge, Split, Detail etc.)
+        // Screens (Merge, Detail, ...) push in from the right over the previous one, which moves
+        // a little to the left underneath. Both stay fully opaque, so nothing shows through.
+        // Switching between the bottom tabs uses a quick "fade through" instead.
         enterTransition = {
-            slideIntoContainer(
-                towards = AnimatedContentTransitionScope.SlideDirection.Start,
-                animationSpec = tween(300, easing = FastOutSlowInEasing),
-                initialOffset = { it / 4 }  // only 25% slide — subtle & fast
-            ) + fadeIn(tween(300))
+            if (isTabSwitch()) fadeThroughIn
+            else slideInHorizontally(tween(SLIDE_MS, easing = FastOutSlowInEasing)) { it }
         },
         exitTransition = {
-            slideOutOfContainer(
-                towards = AnimatedContentTransitionScope.SlideDirection.Start,
-                animationSpec = tween(300, easing = FastOutSlowInEasing),
-                targetOffset = { it / 4 }
-            ) + fadeOut(tween(150))
+            if (isTabSwitch()) fadeThroughOut
+            else slideOutHorizontally(tween(SLIDE_MS, easing = FastOutSlowInEasing)) { -it / 4 }
         },
         popEnterTransition = {
-            slideIntoContainer(
-                towards = AnimatedContentTransitionScope.SlideDirection.End,
-                animationSpec = tween(300, easing = FastOutSlowInEasing),
-                initialOffset = { it / 4 }
-            ) + fadeIn(tween(300))
+            if (isTabSwitch()) fadeThroughIn
+            else slideInHorizontally(tween(SLIDE_MS, easing = FastOutSlowInEasing)) { -it / 4 }
         },
         popExitTransition = {
-            slideOutOfContainer(
-                towards = AnimatedContentTransitionScope.SlideDirection.End,
-                animationSpec = tween(300, easing = FastOutSlowInEasing),
-                targetOffset = { it / 4 }
-            ) + fadeOut(tween(150))
+            if (isTabSwitch()) fadeThroughOut
+            else slideOutHorizontally(tween(SLIDE_MS, easing = FastOutSlowInEasing)) { it }
         }
     ) {
         // --- Splash: no enter, fade out ---
@@ -86,12 +98,7 @@ fun LocalPdfNavHost(
         }
 
         // --- Bottom Nav Tabs: cross-fade only ---
-        composable<Home>(
-            enterTransition = { fadeIn(tween(200)) },
-            exitTransition = { fadeOut(tween(200)) },
-            popEnterTransition = { fadeIn(tween(200)) },
-            popExitTransition = { fadeOut(tween(200)) }
-        ) {
+        composable<Home> {
             HomeScreen(
                 windowSizeClass = windowSizeClass,
                 onOpenPdf = { path ->
@@ -125,12 +132,7 @@ fun LocalPdfNavHost(
             )
         }
 
-        composable<Files>(
-            enterTransition = { fadeIn(tween(200)) },
-            exitTransition = { fadeOut(tween(200)) },
-            popEnterTransition = { fadeIn(tween(200)) },
-            popExitTransition = { fadeOut(tween(200)) }
-        ) {
+        composable<Files> {
             val context = androidx.compose.ui.platform.LocalContext.current
             FilesScreen(
                 windowSizeClass = windowSizeClass,
@@ -171,12 +173,7 @@ fun LocalPdfNavHost(
             )
         }
 
-        composable<Settings>(
-            enterTransition = { fadeIn(tween(200)) },
-            exitTransition = { fadeOut(tween(200)) },
-            popEnterTransition = { fadeIn(tween(200)) },
-            popExitTransition = { fadeOut(tween(200)) }
-        ) {
+        composable<Settings> {
             SettingsScreen(
                 windowSizeClass = windowSizeClass,
                 onNavigateToHome = {

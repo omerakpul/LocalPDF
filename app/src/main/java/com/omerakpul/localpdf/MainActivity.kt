@@ -1,5 +1,14 @@
 package com.omerakpul.localpdf
 
+import com.omerakpul.localpdf.presentation.theme.BackgroundColor
+import com.omerakpul.localpdf.presentation.theme.BACKGROUND_LIGHT
+import com.omerakpul.localpdf.presentation.theme.BACKGROUND_DARK
+import androidx.compose.ui.Modifier
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.background
+import android.graphics.drawable.ColorDrawable
 import android.content.Intent
 import android.content.SharedPreferences
 import android.net.Uri
@@ -68,11 +77,22 @@ class MainActivity : ComponentActivity() {
             val windowSizeClass = androidx.compose.material3.windowsizeclass.calculateWindowSizeClass(this)
             
             LocalPDFTheme(darkTheme = isDarkTheme) {
-                LocalPdfNavHost(
-                    windowSizeClass = windowSizeClass.widthSizeClass,
-                    incomingPdfPath = incomingPdfPath,
-                    onIncomingPdfHandled = { incomingPdfPath = null }
-                )
+                // The window itself follows the in-app theme, so system UI, the keyboard and screen
+                // transitions never reveal a mismatching (e.g. white) background.
+                LaunchedEffect(isDarkTheme) {
+                    window.setBackgroundDrawable(
+                        ColorDrawable((if (isDarkTheme) BACKGROUND_DARK else BACKGROUND_LIGHT).toInt())
+                    )
+                }
+
+                // Solid layer behind the NavHost: cross-fades blend against the app colour
+                Box(modifier = Modifier.fillMaxSize().background(BackgroundColor)) {
+                    LocalPdfNavHost(
+                        windowSizeClass = windowSizeClass.widthSizeClass,
+                        incomingPdfPath = incomingPdfPath,
+                        onIncomingPdfHandled = { incomingPdfPath = null }
+                    )
+                }
             }
         }
     }
