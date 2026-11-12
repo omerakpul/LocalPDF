@@ -6,6 +6,7 @@ import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
 import androidx.lifecycle.ViewModel
+import com.omerakpul.localpdf.domain.util.CompressionEstimator
 import com.omerakpul.localpdf.data.service.FileInfoProvider
 import androidx.lifecycle.viewModelScope
 import com.omerakpul.localpdf.data.service.PdfService
@@ -49,13 +50,21 @@ class CompressPdfViewModel @Inject constructor(
                 return@launch
             }
 
+            val imageBytes = try {
+                pdfService.analyzeImageBytes(uri)
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                -1L
+            }
+
             _uiState.update { current ->
                 current.copy(
                     selectedPdf = uri,
                     pdfName = pdfInfo.first,
                     originalSize = pdfInfo.second,
                     pageCount = pdfInfo.third,
-                    estimatedSize = (pdfInfo.second * _uiState.value.quality).toLong()
+                    imageBytes = imageBytes,
+                    estimatedSize = CompressionEstimator.estimate(pdfInfo.second, imageBytes, current.quality)
                 )
             }
         }
@@ -65,7 +74,7 @@ class CompressPdfViewModel @Inject constructor(
         _uiState.update { current ->
             current.copy(
                 quality = quality,
-                estimatedSize = (current.originalSize * quality).toLong()
+                estimatedSize = CompressionEstimator.estimate(current.originalSize, current.imageBytes, quality)
             )
         }
     }
@@ -78,10 +87,12 @@ class CompressPdfViewModel @Inject constructor(
         val pdfUri = _uiState.value.selectedPdf ?: return
 
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, error = null) }
+            _uiState.update { it.copy(isLoading = true, error = null, progress = 0f) }
 
             try {
-                val resultFile = pdfService.compressPdf(pdfUri, _uiState.value.quality)
+                val resultFile = pdfService.compressPdf(pdfUri, _uiState.value.quality) { progress ->
+                    _uiState.update { it.copy(progress = progress) }
+                }
                 val resultUri = Uri.fromFile(resultFile)
 
                 _uiState.update {
