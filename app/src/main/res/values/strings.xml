@@ -244,5 +244,8 @@
     <string name="detail_pages">Pages</string>
     <string name="detail_created_date">Created</string>
     <string name="detail_saved">Saved to Downloads!</string>
+    <string name="viewer_error">This file could not be opened.</string>
+    <string name="viewer_error_protected">This PDF is password protected. Remove the password first.</string>
+    <string name="storage_permission_denied">Storage permission is needed to save this file.</string>
 </resources>
 

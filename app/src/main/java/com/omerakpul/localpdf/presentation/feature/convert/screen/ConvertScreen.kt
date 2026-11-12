@@ -2,6 +2,7 @@
 
 package com.omerakpul.localpdf.presentation.feature.convert.screen
 
+import com.omerakpul.localpdf.presentation.components.rememberLegacyStorageGate
 import androidx.compose.foundation.style.ExperimentalFoundationStyleApi
 import io.github.ronjunevaldoz.shadcncompose.components.ShadcnIcon
 import io.github.ronjunevaldoz.shadcncompose.components.ShadcnChip
@@ -81,6 +82,7 @@ fun ConvertScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    val requestStorage = rememberLegacyStorageGate()
 
     val filePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
@@ -254,7 +256,13 @@ fun ConvertScreen(
 
                 PrimaryButton(
                     text = stringResource(R.string.convert_button),
-                    onClick = { viewModel.convert() },
+                    onClick = {
+                        if (uiState.conversionMode == ConversionMode.PDF_TO_IMAGES) {
+                            requestStorage { viewModel.convert() }
+                        } else {
+                            viewModel.convert()
+                        }
+                    },
                     icon = Icons.Rounded.SwapHoriz,
                     enabled = uiState.canConvert,
                     loading = uiState.isLoading

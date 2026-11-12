@@ -1,5 +1,6 @@
 package com.omerakpul.localpdf.presentation.feature.home.screen
 
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material.icons.rounded.SwapHoriz
 import androidx.compose.material.icons.rounded.Lock
@@ -276,10 +277,18 @@ private fun HomeContent(
             horizontalArrangement = Arrangement.spacedBy(14.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            items(
+            itemsIndexed(
                 items = features,
-                key = { it.titleResId }
-            ) { feature ->
+                key = { _, item -> item.titleResId },
+                span = { index, _ ->
+                    // With two columns an odd last card would leave a hole: let it fill the row
+                    if (isCompact && index == features.lastIndex && features.size % 2 == 1) {
+                        GridItemSpan(maxLineSpan)
+                    } else {
+                        GridItemSpan(1)
+                    }
+                }
+            ) { _, feature ->
                 FeatureCard(
                     title = stringResource(feature.titleResId),
                     description = stringResource(feature.descResId),
