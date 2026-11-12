@@ -8,7 +8,9 @@ import android.graphics.Matrix
 import android.media.ExifInterface
 import android.net.Uri
 import android.os.Environment
+import com.omerakpul.localpdf.domain.util.CompressionEstimator
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
+import com.tom_roush.pdfbox.cos.COSName
 import com.tom_roush.pdfbox.pdmodel.PDDocument
 import com.tom_roush.pdfbox.pdmodel.PDPage
 import com.tom_roush.pdfbox.pdmodel.PDPageContentStream
@@ -179,12 +181,59 @@ class PdfService @Inject constructor(
             }
         }
 
+    /** Visits every image XObject of the document, including images inside form XObjects. */
+    private fun walkImages(
+        document: PDDocument,
+        visit: (PDResources, COSName, PDImageXObject) -> Unit
+    ) {
+        val visitedForms = HashSet<Any>()
+        fun walk(resources: PDResources?) {
+            if (resources == null) return
+            for (name in resources.xObjectNames.toList()) {
+                when (val xObject = resources.getXObject(name)) {
+                    is PDImageXObject -> visit(resources, name, xObject)
+                    is PDFormXObject -> if (visitedForms.add(xObject.cosObject)) walk(xObject.resources)
+                    else -> {}
+                }
+            }
+        }
+        document.pages.forEach { walk(it.resources) }
+    }
+
+    private fun isRecompressible(image: PDImageXObject): Boolean =
+        !(image.isStencil || image.softMask != null || image.mask != null)
+
+    /** Total bytes used by images that [compressPdf] is able to recompress. */
+    suspend fun analyzeImageBytes(pdfUri: Uri): Long = withContext(Dispatchers.IO) {
+        val sourceFile = uriToFile(pdfUri)
+        val document = PDDocument.load(sourceFile)
+        try {
+            val seen = HashSet<Any>()
+            var total = 0L
+            walkImages(document) { _, _, image ->
+                if (isRecompressible(image) && seen.add(image.cosObject)) {
+                    total += image.stream.length
+                }
+            }
+            total
+        } finally {
+            document.close()
+            sourceFile.delete()
+        }
+    }
+
     /**
      * Compresses a PDF by recompressing and downscaling its embedded images.
      * Text, vectors and fonts are untouched, so text stays selectable/searchable.
      * If the result is not smaller than the source, the original is returned unchanged.
+     *
+     * @param onProgress called with a value between 0 and 1 as images are processed
      */
-    suspend fun compressPdf(pdfUri: Uri, quality: Float): File = withContext(Dispatchers.IO) {
+    suspend fun compressPdf(
+        pdfUri: Uri,
+        quality: Float,
+        onProgress: (Float) -> Unit = {}
+    ): File = withContext(Dispatchers.IO) {
         val sourceFile = uriToFile(pdfUri)
         val document = PDDocument.load(sourceFile)
         val outputFile = File(
@@ -195,20 +244,27 @@ class PdfService @Inject constructor(
         try {
             val q = quality.coerceIn(0.1f, 1f)
             val jpegQuality = (q * 100).toInt().coerceIn(30, 90)
-            val scale = (0.25f + q * 0.75f).coerceAtMost(1f)
+            val scale = CompressionEstimator.imageScale(q)
+
+            // First pass: how many distinct images will be processed (for progress)
+            val countedImages = HashSet<Any>()
+            walkImages(document) { _, _, image ->
+                if (isRecompressible(image)) countedImages.add(image.cosObject)
+            }
+            val total = countedImages.size.coerceAtLeast(1)
+            var done = 0
+            onProgress(0f)
 
             val replaced = HashMap<Any, PDImageXObject>()
-            val visited = HashSet<Any>()
 
             fun recompress(image: PDImageXObject): PDImageXObject? {
-                if (image.isStencil || image.softMask != null || image.mask != null) return null
                 val key = image.cosObject
                 if (replaced.containsKey(key)) return replaced[key]
 
                 val oldSize = image.stream.length
                 var bitmap: Bitmap? = null
                 var scaled: Bitmap? = null
-                return try {
+                val result: PDImageXObject? = try {
                     bitmap = image.image
                     scaled = if (scale < 1f && bitmap.width > 800) {
                         Bitmap.createScaledBitmap(
@@ -219,11 +275,7 @@ class PdfService @Inject constructor(
                         )
                     } else bitmap
                     val jpeg = bitmapToJpeg(scaled, jpegQuality)
-                    if (jpeg.size.toLong() >= oldSize) {
-                        null
-                    } else {
-                        JPEGFactory.createFromByteArray(document, jpeg)
-                    }
+                    if (jpeg.size.toLong() >= oldSize) null else JPEGFactory.createFromByteArray(document, jpeg)
                 } catch (e: Exception) {
                     null
                 } catch (e: OutOfMemoryError) {
@@ -231,33 +283,26 @@ class PdfService @Inject constructor(
                 } finally {
                     if (scaled != null && scaled !== bitmap) scaled.recycle()
                     bitmap?.recycle()
-                }.also { replaced[key] = it ?: image }
+                }
+                replaced[key] = result ?: image
+                done++
+                onProgress((done.toFloat() / total).coerceAtMost(1f))
+                return result
             }
 
-            fun processResources(resources: PDResources?) {
-                if (resources == null) return
-                for (name in resources.xObjectNames.toList()) {
-                    when (val xObject = resources.getXObject(name)) {
-                        is PDImageXObject -> {
-                            val newImage = recompress(xObject)
-                            if (newImage != null && newImage !== xObject) {
-                                resources.put(name, newImage)
-                            }
-                        }
-                        is PDFormXObject -> {
-                            if (visited.add(xObject.cosObject)) processResources(xObject.resources)
-                        }
-                        else -> {}
-                    }
+            walkImages(document) { resources, name, image ->
+                if (isRecompressible(image)) {
+                    val newImage = recompress(image)
+                    if (newImage != null) resources.put(name, newImage)
                 }
             }
 
-            document.pages.forEach { processResources(it.resources) }
             document.save(outputFile)
 
             if (outputFile.length() >= sourceFile.length()) {
                 sourceFile.copyTo(outputFile, overwrite = true)
             }
+            onProgress(1f)
             outputFile
         } catch (e: Exception) {
             outputFile.delete()
