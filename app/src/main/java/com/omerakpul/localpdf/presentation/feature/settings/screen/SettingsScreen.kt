@@ -1,5 +1,6 @@
 package com.omerakpul.localpdf.presentation.feature.settings.screen
 
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -232,27 +233,13 @@ private fun SettingsContent(
     ) {
         Spacer(modifier = Modifier.height(16.dp))
 
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = stringResource(R.string.settings_title),
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
-                color = TextPrimary
-            )
-            Box(
-                modifier = Modifier
-                    .padding(top = 8.dp)
-                    .fillMaxWidth(0.15f)
-                    .height(3.dp)
-                    .clip(RoundedCornerShape(2.dp))
-                    .background(PrimaryRed)
-            )
-        }
+        // Page title (left aligned, same style as the other tabs)
+        Text(
+            text = stringResource(R.string.settings_title),
+            style = MaterialTheme.typography.headlineSmall,
+            color = TextPrimary,
+            modifier = Modifier.padding(vertical = 12.dp)
+        )
 
         Spacer(modifier = Modifier.height(24.dp))
 

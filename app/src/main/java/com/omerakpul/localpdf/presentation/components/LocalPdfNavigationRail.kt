@@ -1,5 +1,6 @@
 package com.omerakpul.localpdf.presentation.components
 
+import com.omerakpul.localpdf.presentation.theme.CardBackground
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -35,29 +36,11 @@ fun LocalPdfNavigationRail(
     onNavigate: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val items = listOf(
-        BottomNavItem(
-            route = "home",
-            titleResId = R.string.nav_home,
-            selectedIcon = Icons.Filled.Home,
-            unselectedIcon = Icons.Outlined.Home
-        ),
-        BottomNavItem(
-            route = "files",
-            titleResId = R.string.nav_files,
-            selectedIcon = Icons.Filled.Folder,
-            unselectedIcon = Icons.Outlined.Folder
-        ),
-        BottomNavItem(
-            route = "settings",
-            titleResId = R.string.nav_settings,
-            selectedIcon = Icons.Filled.Settings,
-            unselectedIcon = Icons.Outlined.Settings
-        )
-    )
+    val items = bottomNavItems
 
     NavigationRail(
         modifier = modifier.fillMaxHeight(),
+        containerColor = CardBackground,
         header = {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -81,6 +64,7 @@ fun LocalPdfNavigationRail(
             NavigationRailItem(
                 selected = isSelected,
                 onClick = { onNavigate(item.route) },
+                colors = navRailItemColors(),
                 icon = {
                     Icon(
                         imageVector = if (isSelected) item.selectedIcon else item.unselectedIcon,
