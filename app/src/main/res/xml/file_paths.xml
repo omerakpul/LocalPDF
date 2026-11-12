@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <paths>
-    <files-path name="merged" path="merged/" />
+    <!-- Only the app's generated documents can be shared through the FileProvider -->
     <external-files-path name="documents" path="Documents/" />
-    <cache-path name="cache" path="/" />
 </paths>

@@ -1,13 +1,11 @@
-<?xml version="1.0" encoding="utf-8"?><!--
-   Sample backup rules file; uncomment and customize as necessary.
-   See https://developer.android.com/guide/topics/data/autobackup
-   for details.
-   Note: This file is ignored for devices older than API 31
-   See https://developer.android.com/about/versions/12/backup-restore
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+   Auto Backup rules (Android 11 and lower).
+   Generated PDFs live in the external files dir and can be large, so they are not backed up;
+   the file index (database) would point to missing files after a restore, so it is skipped too.
+   Settings (shared preferences) are still backed up.
 -->
 <full-backup-content>
-    <!--
-   <include domain="sharedpref" path="."/>
-   <exclude domain="sharedpref" path="device.xml"/>
--->
+    <exclude domain="external" path="." />
+    <exclude domain="database" path="." />
 </full-backup-content>
