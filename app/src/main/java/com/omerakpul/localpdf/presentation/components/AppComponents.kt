@@ -30,6 +30,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -181,7 +182,8 @@ fun PrimaryButton(
     icon: ImageVector? = null,
     enabled: Boolean = true,
     loading: Boolean = false,
-    variant: ButtonVariant = ButtonVariant.Default
+    variant: ButtonVariant = ButtonVariant.Default,
+    contentColor: Color = Color.Unspecified
 ) {
     ShadcnButton(
         onClick = onClick,
@@ -197,9 +199,9 @@ fun PrimaryButton(
             if (loading) {
                 ShadcnSpinner(modifier = Modifier.size(18.dp))
             } else if (icon != null) {
-                ShadcnIcon(imageVector = icon, contentDescription = null)
+                ShadcnIcon(imageVector = icon, tint = contentColor, contentDescription = null)
             }
-            ShadcnText(text = text, fontWeight = FontWeight.SemiBold)
+            ShadcnText(text = text, fontWeight = FontWeight.SemiBold, color = contentColor)
         }
     }
 }

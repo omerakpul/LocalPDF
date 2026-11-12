@@ -296,7 +296,8 @@ fun PdfDetailScreen(
                         text = stringResource(R.string.action_delete),
                         onClick = { showDeleteDialog = true },
                         icon = Icons.Rounded.Delete,
-                        variant = ButtonVariant.Destructive
+                        variant = ButtonVariant.Ghost,
+                        contentColor = PrimaryRed
                     )
                 }
             }
