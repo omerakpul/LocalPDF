@@ -81,6 +81,8 @@ class PdfDetailViewModel @Inject constructor(
                 val dateFormat = SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault())
                 val createdDate = dateFormat.format(Date(file.lastModified()))
 
+                withContext(Dispatchers.IO) { recordFile(file, file.name, pageCount) }
+
                 _uiState.update {
                     it.copy(
                         isLoading = false,
@@ -118,16 +120,13 @@ class PdfDetailViewModel @Inject constructor(
 
                     copyToDownloads(sourceFile, fileName, mimeType)
 
-                    // Keep the app-private copy in the Files list (always readable by the app)
-                    val pdf = Pdf(
-                        name = fileName,
-                        filePath = sourceFile.absolutePath,
-                        fileSize = sourceFile.length(),
-                        createdAt = System.currentTimeMillis(),
-                        pageCount = _uiState.value.pageCount,
-                        sourceType = try { com.omerakpul.localpdf.domain.model.PdfSourceType.valueOf(sourceType) } catch (e: Exception) { com.omerakpul.localpdf.domain.model.PdfSourceType.UNKNOWN }
-                    )
-                    pdfRepository.insertPdf(pdf)
+                    // Keep the Files/Recent list entry (one row per file) and use the chosen name
+                    val existing = pdfRepository.getPdfByPath(sourceFile.absolutePath)
+                    if (existing != null) {
+                        pdfRepository.updatePdf(existing.copy(name = fileName))
+                    } else {
+                        recordFile(sourceFile, fileName, _uiState.value.pageCount)
+                    }
 
                     sourceFile.absolutePath
                 }
@@ -179,11 +178,31 @@ class PdfDetailViewModel @Inject constructor(
         }
     }
 
+    /** Adds the file to the stored list unless it is already there. */
+    private suspend fun recordFile(file: File, displayName: String, pageCount: Int) {
+        if (pdfRepository.getPdfByPath(file.absolutePath) != null) return
+        pdfRepository.insertPdf(
+            Pdf(
+                name = displayName,
+                filePath = file.absolutePath,
+                fileSize = file.length(),
+                createdAt = file.lastModified().takeIf { it > 0 } ?: System.currentTimeMillis(),
+                pageCount = pageCount,
+                sourceType = try {
+                    com.omerakpul.localpdf.domain.model.PdfSourceType.valueOf(sourceType)
+                } catch (e: Exception) {
+                    com.omerakpul.localpdf.domain.model.PdfSourceType.UNKNOWN
+                }
+            )
+        )
+    }
+
     fun deleteFile() {
         viewModelScope.launch {
             try {
                 withContext(Dispatchers.IO) {
                     File(pdfPath).delete()
+                    pdfRepository.deletePdfByPath(pdfPath)
                 }
                 _uiState.update { it.copy(isDeleted = true) }
             } catch (e: Exception) {

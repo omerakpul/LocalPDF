@@ -32,7 +32,9 @@ import com.omerakpul.localpdf.presentation.feature.viewer.screen.PdfViewerScreen
 fun LocalPdfNavHost(
     windowSizeClass: WindowWidthSizeClass,
     incomingPdfPath: String? = null,
-    onIncomingPdfHandled: () -> Unit = {}
+    onIncomingPdfHandled: () -> Unit = {},
+    incomingMergePaths: List<String> = emptyList(),
+    onIncomingMergeHandled: () -> Unit = {}
 ) {
     val navController = rememberNavController()
 
@@ -41,6 +43,16 @@ fun LocalPdfNavHost(
         incomingPdfPath?.let { path ->
             navController.navigate(PdfViewer(pdfPath = path))
             onIncomingPdfHandled()
+        }
+    }
+
+    // Several PDFs shared from another app: open merge with them selected
+    LaunchedEffect(incomingMergePaths) {
+        if (incomingMergePaths.isNotEmpty()) {
+            navController.navigate(
+                Merge(uris = incomingMergePaths.map { android.net.Uri.fromFile(java.io.File(it)).toString() })
+            )
+            onIncomingMergeHandled()
         }
     }
 
@@ -79,7 +91,7 @@ fun LocalPdfNavHost(
                         navController.navigate(Detail(pdfPath = path, sourceType = "UNKNOWN"))
                     }
                 },
-                onNavigateToMerge = { navController.navigate(Merge) },
+                onNavigateToMerge = { navController.navigate(Merge()) },
                 onNavigateToSplit = { navController.navigate(Split) },
                 onNavigateToCompress = { navController.navigate(Compress) },
                 onNavigateToConvert = { navController.navigate(Convert) },
@@ -180,8 +192,10 @@ fun LocalPdfNavHost(
             )
         }
 
-        composable<Merge> {
+        composable<Merge> { backStackEntry ->
+            val merge: Merge = backStackEntry.toRoute()
             MergeScreen(
+                initialUris = merge.uris,
                 onBack = { navController.popBackStack() },
                 onNavigateToDetail = { pdfPath ->
                     navController.navigate(Detail(pdfPath = pdfPath, sourceType = "MERGED"))

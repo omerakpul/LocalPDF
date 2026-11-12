@@ -1,5 +1,6 @@
 package com.omerakpul.localpdf.data.service
 
+import java.io.File
 import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
@@ -22,6 +23,7 @@ class FileInfoProvider @Inject constructor(
     }
 
     fun getFileName(uri: Uri): String? {
+        if (uri.scheme == "file") return uri.path?.let { File(it).name }
         var name: String? = null
         context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
             val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
@@ -33,6 +35,7 @@ class FileInfoProvider @Inject constructor(
     }
 
     fun getFileSize(uri: Uri): Long {
+        if (uri.scheme == "file") return uri.path?.let { File(it).length() } ?: 0L
         var size = 0L
         context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
             val sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE)

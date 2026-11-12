@@ -1,5 +1,6 @@
 package com.omerakpul.localpdf.presentation.feature.edit.viewmodel
 
+import com.omerakpul.localpdf.data.service.PdfThumbnails
 import kotlinx.coroutines.CancellationException
 import com.omerakpul.localpdf.R
 import android.content.Context
@@ -35,6 +36,9 @@ class EditPdfViewModel @Inject constructor(
     private val fileInfo: FileInfoProvider
 ) : ViewModel() {
 
+    /** Page previews for the page list and grid; released together with the view model. */
+    val thumbnails = PdfThumbnails(context)
+
     private val _uiState = MutableStateFlow(EditPdfUiState())
     val uiState: StateFlow<EditPdfUiState> = _uiState.asStateFlow()
 
@@ -67,6 +71,11 @@ class EditPdfViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    override fun onCleared() {
+        thumbnails.close()
+        super.onCleared()
     }
 
     fun clearSelection() {

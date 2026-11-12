@@ -2,6 +2,8 @@
 
 package com.omerakpul.localpdf.presentation.feature.detail.screen
 
+import com.omerakpul.localpdf.domain.util.formatFileSize
+import com.omerakpul.localpdf.presentation.components.rememberLegacyStorageGate
 import androidx.compose.foundation.style.ExperimentalFoundationStyleApi
 import io.github.ronjunevaldoz.shadcncompose.styles.ButtonVariant
 import io.github.ronjunevaldoz.shadcncompose.components.ShadcnTextStyle
@@ -163,6 +165,7 @@ fun PdfDetailScreen(
         }
     }
 
+    val requestStorage = rememberLegacyStorageGate()
     val isPdf = uiState.filePath.lowercase().endsWith(".pdf")
     val fileLabel = if (isPdf) "PDF" else "Word"
 
@@ -259,7 +262,7 @@ fun PdfDetailScreen(
 
                     PrimaryButton(
                         text = stringResource(R.string.detail_save_downloads),
-                        onClick = { viewModel.saveToDownloads() },
+                        onClick = { requestStorage { viewModel.saveToDownloads() } },
                         icon = Icons.Rounded.Save
                     )
 
@@ -293,7 +296,8 @@ fun PdfDetailScreen(
                         text = stringResource(R.string.action_delete),
                         onClick = { showDeleteDialog = true },
                         icon = Icons.Rounded.Delete,
-                        variant = ButtonVariant.Ghost
+                        variant = ButtonVariant.Ghost,
+                        contentColor = PrimaryRed
                     )
                 }
             }
@@ -342,14 +346,6 @@ private fun InfoRow(label: String, value: String) {
     ) {
         ShadcnText(text = label, muted = true)
         ShadcnText(text = value, fontWeight = FontWeight.Medium)
-    }
-}
-
-private fun formatFileSize(size: Long): String {
-    return when {
-        size < 1024 -> "$size B"
-        size < 1024 * 1024 -> String.format("%.1f KB", size / 1024.0)
-        else -> String.format("%.1f MB", size / (1024.0 * 1024.0))
     }
 }
 

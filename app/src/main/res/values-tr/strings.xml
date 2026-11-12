@@ -245,4 +245,11 @@
     <string name="detail_pages">Sayfa</string>
     <string name="detail_created_date">Oluşturulma</string>
     <string name="detail_saved">İndirilenlere kaydedildi!</string>
+    <string name="viewer_error">Bu dosya açılamadı.</string>
+    <string name="viewer_error_protected">Bu PDF şifre korumalı. Önce şifreyi kaldırın.</string>
+    <string name="storage_permission_denied">Bu dosyayı kaydetmek için depolama izni gerekiyor.</string>
+    <string name="convert_format_png">PNG (kayıpsız)</string>
+    <string name="convert_format_jpg">JPG (daha küçük)</string>
+    <string name="licenses_third_party">ÜÇÜNCÜ TARAF BİLEŞENLER</string>
+    <string name="licenses_apache_note">Yukarıdaki her bileşen Apache Lisansı 2.0 ile lisanslanmıştır. Lisansın tam metni aşağıdadır.</string>
 </resources>

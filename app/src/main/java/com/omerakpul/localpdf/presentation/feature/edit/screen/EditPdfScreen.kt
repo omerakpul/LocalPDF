@@ -2,6 +2,14 @@
 
 package com.omerakpul.localpdf.presentation.feature.edit.screen
 
+import com.omerakpul.localpdf.presentation.theme.OutlineColor
+import com.omerakpul.localpdf.data.service.PdfThumbnails
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.Color
+import androidx.compose.runtime.produceState
+import androidx.compose.foundation.Image
+import android.graphics.Bitmap
 import androidx.compose.material.icons.rounded.SwapVert
 import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.LockOpen
@@ -314,6 +322,15 @@ fun EditPdfScreen(
                                         color = TextSecondary,
                                         modifier = Modifier.width(28.dp)
                                     )
+                                    PageThumbnail(
+                                        thumbnails = viewModel.thumbnails,
+                                        uri = uiState.selectedPdf,
+                                        page = originalPage,
+                                        modifier = Modifier
+                                            .padding(end = 12.dp)
+                                            .size(width = 40.dp, height = 56.dp)
+                                            .clip(RoundedCornerShape(6.dp))
+                                    )
                                     Text(
                                         text = stringResource(R.string.edit_page_n, originalPage),
                                         fontSize = 15.sp,
@@ -370,23 +387,40 @@ fun EditPdfScreen(
                                 val isSelected = page in uiState.selectedPages
                                 Box(
                                     modifier = Modifier
-                                        .size(48.dp)
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .background(if (isSelected) PrimaryRed else CardBackground)
+                                        .size(width = 72.dp, height = 100.dp)
+                                        .clip(RoundedCornerShape(10.dp))
                                         .border(
-                                            1.dp,
-                                            if (isSelected) PrimaryRed else TextSecondary.copy(alpha = 0.3f),
-                                            RoundedCornerShape(8.dp)
+                                            if (isSelected) 2.dp else 1.dp,
+                                            if (isSelected) PrimaryRed else OutlineColor,
+                                            RoundedCornerShape(10.dp)
                                         )
-                                        .clickable { viewModel.togglePage(page) },
-                                    contentAlignment = Alignment.Center
+                                        .clickable { viewModel.togglePage(page) }
                                 ) {
+                                    PageThumbnail(
+                                        thumbnails = viewModel.thumbnails,
+                                        uri = uiState.selectedPdf,
+                                        page = page,
+                                        modifier = Modifier.fillMaxSize()
+                                    )
+                                    if (isSelected) {
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxSize()
+                                                .background(PrimaryRed.copy(alpha = 0.18f))
+                                        )
+                                    }
+                                    // Page number badge
                                     Text(
                                         text = "$page",
-                                        fontSize = 14.sp,
-                                        fontWeight = FontWeight.Medium,
-                                        color = if (isSelected) CardBackground else TextPrimary,
-                                        textAlign = TextAlign.Center
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = if (isSelected) Color.White else TextPrimary,
+                                        modifier = Modifier
+                                            .align(Alignment.BottomCenter)
+                                            .padding(bottom = 4.dp)
+                                            .clip(RoundedCornerShape(50))
+                                            .background(if (isSelected) PrimaryRed else CardBackground.copy(alpha = 0.9f))
+                                            .padding(horizontal = 8.dp, vertical = 1.dp)
                                     )
                                 }
                             }
@@ -431,4 +465,30 @@ fun EditPdfScreen(
                 )
             }
             }
+}
+
+/** A page preview: white sheet while loading, the rendered page afterwards. */
+@Composable
+private fun PageThumbnail(
+    thumbnails: PdfThumbnails,
+    uri: Uri?,
+    page: Int,
+    modifier: Modifier = Modifier
+) {
+    val bitmap by produceState<Bitmap?>(initialValue = null, uri, page) {
+        value = if (uri != null) thumbnails.load(uri, page) else null
+    }
+    Box(
+        modifier = modifier.background(Color.White),
+        contentAlignment = Alignment.Center
+    ) {
+        bitmap?.let {
+            Image(
+                bitmap = it.asImageBitmap(),
+                contentDescription = null,
+                contentScale = ContentScale.Fit,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+    }
 }

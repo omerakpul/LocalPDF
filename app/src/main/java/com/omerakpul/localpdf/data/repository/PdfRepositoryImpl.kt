@@ -23,6 +23,14 @@ class PdfRepositoryImpl @Inject constructor(
         return pdfDao.getPdfById(id)?.toDomain()
     }
 
+    override suspend fun getPdfByPath(path: String): Pdf? {
+        return pdfDao.getPdfByPath(path)?.toDomain()
+    }
+
+    override suspend fun deletePdfByPath(path: String) {
+        pdfDao.deletePdfByPath(path)
+    }
+
     override fun searchPdfs(query: String): Flow<List<Pdf>> {
         return pdfDao.searchPdfs(query).map { it.toDomainList() }
     }

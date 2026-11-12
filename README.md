@@ -16,18 +16,18 @@ You can download the latest APK from the [Releases](../../releases) section and 
 ## ✨ Features
 
 * **In-App PDF Viewer:** Smooth PDF rendering with pinch-to-zoom.
-* **Open with LocalPDF:** Open or share a PDF from any other app (file manager, mail, browser) straight into LocalPDF.
+* **Open with LocalPDF:** Open or share a PDF from any other app (file manager, mail, browser) straight into LocalPDF. Share several PDFs at once and they open in Merge, ready to combine.
 * **Merge PDFs:** Combine multiple PDF documents into a single file.
 * **Split PDFs:** Extract specific pages or split a PDF into smaller parts.
 * **Compress PDFs:** Shrink a PDF by recompressing its embedded images (text stays selectable), with a size estimate and progress bar.
 * **Convert:**
   * Word (`.docx`) → PDF, keeping bold/italic text, font sizes, headings, alignment, bullet lists and basic tables
   * PDF → Word (text)
-  * PDF → Images (PNG, saved to `Pictures/LocalPDF`)
+  * PDF → Images (PNG or JPG, saved to `Pictures/LocalPDF`)
 * **Photo to PDF:** Select multiple images from your gallery and turn them into a single PDF.
 * **Sign PDF:** Draw your signature, then drag and pinch it into place on a page preview. (This is a drawn signature image, not a cryptographic digital signature.)
-* **Edit PDF:** Delete, rotate, reorder or duplicate pages, and add or remove a password.
-* **File Management:** Recent files on the home screen plus a built-in file explorer to manage, rename, share and delete generated files; save results to Downloads.
+* **Edit PDF:** Delete, rotate, reorder or duplicate pages with page previews, and add or remove a password.
+* **File Management:** Every result is listed on the Files screen (search, filter, sort, rename, share, delete) and the latest ones on the home screen; save results to Downloads.
 * **Languages:** English and Turkish.
 
 ## ⚠️ Known Limitations
@@ -35,7 +35,6 @@ You can download the latest APK from the [Releases](../../releases) section and 
 * Word → PDF does not render images, text boxes, headers/footers, numbered-list numbering or table styling. PDF → Word extracts text only.
 * PDFs without embedded images cannot be made smaller by Compress.
 * Very large files are rejected based on the device's RAM (limits range from 20 to 150 MB) to avoid running out of memory.
-* On Android 8–9 saving to Downloads/Pictures may fail because no runtime storage permission is requested.
 
 ## 🛠 Tech Stack & Architecture
 
@@ -55,8 +54,9 @@ You can download the latest APK from the [Releases](../../releases) section and 
 
 <p align="center">
   <img src="screenshots/home.png" width="200" style="margin: 0 5px;" />
+  <img src="screenshots/home_dark.png" width="200" style="margin: 0 5px;" />
   <img src="screenshots/files.png" width="200" style="margin: 0 5px;" />
-  <img src="screenshots/merge.png" width="200" style="margin: 0 5px;" />
+  <img src="screenshots/edit.png" width="200" style="margin: 0 5px;" />
   <img src="screenshots/settings.png" width="200" style="margin: 0 5px;" />
 </p>
 

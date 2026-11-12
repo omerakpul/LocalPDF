@@ -41,6 +41,15 @@
                 <data android:mimeType="application/pdf" />
             </intent-filter>
 
+            <!-- Share several PDFs at once: opens the merge screen with them selected -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+
+                <data android:mimeType="application/pdf" />
+            </intent-filter>
+
             <!-- "Share" a PDF to LocalPDF -->
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />

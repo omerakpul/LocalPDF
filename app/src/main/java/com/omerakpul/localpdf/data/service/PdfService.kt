@@ -1,5 +1,6 @@
 package com.omerakpul.localpdf.data.service
 
+import com.omerakpul.localpdf.domain.util.ExportImageFormat
 import android.content.Context
 import com.omerakpul.localpdf.R
 import android.graphics.Bitmap
@@ -648,6 +649,7 @@ class PdfService @Inject constructor(
     suspend fun exportPdfToImages(
         pdfUri: Uri,
         baseName: String,
+        format: ExportImageFormat = ExportImageFormat.PNG,
         onProgress: (Float) -> Unit = {}
     ): Int = withContext(Dispatchers.IO) {
         val sourceFile = uriToFile(pdfUri)
@@ -675,7 +677,7 @@ class PdfService @Inject constructor(
                         try {
                             bitmap.eraseColor(android.graphics.Color.WHITE)
                             page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
-                            saveImage(bitmap, ImageExportNaming.pageFileName(baseName, index + 1, total))
+                            saveImage(bitmap, ImageExportNaming.pageFileName(baseName, index + 1, total, format.extension), format)
                         } finally {
                             bitmap.recycle()
                         }
@@ -690,12 +692,13 @@ class PdfService @Inject constructor(
     }
 
     /** Saves a bitmap as PNG into Pictures/LocalPDF (MediaStore on Android 10+). */
-    private fun saveImage(bitmap: Bitmap, fileName: String) {
+    private fun saveImage(bitmap: Bitmap, fileName: String, format: ExportImageFormat) {
+        val compressFormat = if (format == ExportImageFormat.JPEG) Bitmap.CompressFormat.JPEG else Bitmap.CompressFormat.PNG
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             val resolver = context.contentResolver
             val values = ContentValues().apply {
                 put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
-                put(MediaStore.MediaColumns.MIME_TYPE, "image/png")
+                put(MediaStore.MediaColumns.MIME_TYPE, format.mimeType)
                 put(MediaStore.MediaColumns.RELATIVE_PATH, "${Environment.DIRECTORY_PICTURES}/LocalPDF")
                 put(MediaStore.MediaColumns.IS_PENDING, 1)
             }
@@ -703,7 +706,7 @@ class PdfService @Inject constructor(
                 ?: throw java.io.IOException(context.getString(R.string.error_save_failed))
             try {
                 resolver.openOutputStream(uri)?.use { out ->
-                    bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+                    bitmap.compress(compressFormat, 92, out)
                 } ?: throw java.io.IOException(context.getString(R.string.error_save_failed))
                 values.clear()
                 values.put(MediaStore.MediaColumns.IS_PENDING, 0)
@@ -719,8 +722,8 @@ class PdfService @Inject constructor(
                 "LocalPDF"
             ).apply { mkdirs() }
             val file = File(dir, fileName)
-            FileOutputStream(file).use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
-            MediaScannerConnection.scanFile(context, arrayOf(file.absolutePath), arrayOf("image/png"), null)
+            FileOutputStream(file).use { bitmap.compress(compressFormat, 92, it) }
+            MediaScannerConnection.scanFile(context, arrayOf(file.absolutePath), arrayOf(format.mimeType), null)
         }
     }
 

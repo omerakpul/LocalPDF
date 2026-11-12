@@ -2,6 +2,9 @@
 
 package com.omerakpul.localpdf.presentation.feature.convert.screen
 
+import com.omerakpul.localpdf.domain.util.formatFileSize
+import com.omerakpul.localpdf.domain.util.ExportImageFormat
+import com.omerakpul.localpdf.presentation.components.rememberLegacyStorageGate
 import androidx.compose.foundation.style.ExperimentalFoundationStyleApi
 import io.github.ronjunevaldoz.shadcncompose.components.ShadcnIcon
 import io.github.ronjunevaldoz.shadcncompose.components.ShadcnChip
@@ -81,6 +84,7 @@ fun ConvertScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    val requestStorage = rememberLegacyStorageGate()
 
     val filePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
@@ -149,6 +153,22 @@ fun ConvertScreen(
                     selected = uiState.conversionMode == ConversionMode.PDF_TO_IMAGES,
                     onClick = { viewModel.setConversionMode(ConversionMode.PDF_TO_IMAGES) }
                 )
+            }
+
+            if (uiState.conversionMode == ConversionMode.PDF_TO_IMAGES) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    ExportImageFormat.entries.forEach { format ->
+                        ShadcnChip(
+                            label = stringResource(
+                                if (format == ExportImageFormat.PNG) R.string.convert_format_png
+                                else R.string.convert_format_jpg
+                            ),
+                            selected = uiState.imageFormat == format,
+                            onClick = { viewModel.setImageFormat(format) }
+                        )
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -228,7 +248,7 @@ fun ConvertScreen(
                     val toExt = when (uiState.conversionMode) {
                         ConversionMode.WORD_TO_PDF -> ".pdf"
                         ConversionMode.PDF_TO_WORD -> ".docx"
-                        ConversionMode.PDF_TO_IMAGES -> ".png"
+                        ConversionMode.PDF_TO_IMAGES -> ".${uiState.imageFormat.extension}"
                     }
 
                     Text(text = fromExt, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = ConvertIconColor)
@@ -254,7 +274,13 @@ fun ConvertScreen(
 
                 PrimaryButton(
                     text = stringResource(R.string.convert_button),
-                    onClick = { viewModel.convert() },
+                    onClick = {
+                        if (uiState.conversionMode == ConversionMode.PDF_TO_IMAGES) {
+                            requestStorage { viewModel.convert() }
+                        } else {
+                            viewModel.convert()
+                        }
+                    },
                     icon = Icons.Rounded.SwapHoriz,
                     enabled = uiState.canConvert,
                     loading = uiState.isLoading
@@ -263,10 +289,3 @@ fun ConvertScreen(
             }
 }
 
-private fun formatFileSize(size: Long): String {
-    return when {
-        size < 1024 -> "$size B"
-        size < 1024 * 1024 -> String.format("%.1f KB", size / 1024.0)
-        else -> String.format("%.1f MB", size / (1024.0 * 1024.0))
-    }
-}

@@ -1,5 +1,11 @@
 package com.omerakpul.localpdf.domain.util
 
+/** Image formats offered when exporting PDF pages. */
+enum class ExportImageFormat(val extension: String, val mimeType: String) {
+    PNG("png", "image/png"),
+    JPEG("jpg", "image/jpeg")
+}
+
 object ImageExportNaming {
 
     /** "report", page 3 of 12 -> "report_page_03.png" */

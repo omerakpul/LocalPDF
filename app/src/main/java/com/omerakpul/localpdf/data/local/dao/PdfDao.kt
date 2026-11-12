@@ -30,6 +30,12 @@ interface PdfDao {
     @Update
     suspend fun updatePdf(pdf: PdfEntity)
 
+    @Query("SELECT * FROM pdfs WHERE filePath = :path LIMIT 1")
+    suspend fun getPdfByPath(path: String): PdfEntity?
+
+    @Query("DELETE FROM pdfs WHERE filePath = :path")
+    suspend fun deletePdfByPath(path: String)
+
     @Query("DELETE FROM pdfs WHERE id = :id")
     suspend fun deletePdfById(id: Int)
 

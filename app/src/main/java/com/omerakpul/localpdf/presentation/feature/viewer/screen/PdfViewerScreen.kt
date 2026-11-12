@@ -84,7 +84,7 @@ fun PdfViewerScreen(
     var pageCount by remember { mutableStateOf(0) }
     val pageBitmaps = remember { mutableStateListOf<Bitmap?>() }
     var isLoading by remember { mutableStateOf(true) }
-    var error by remember { mutableStateOf<String?>(null) }
+    var errorRes by remember { mutableStateOf<Int?>(null) }
     // PdfRenderer allows only one open page at a time, so all rendering goes through this lock
     val renderLock = remember { Mutex() }
 
@@ -101,7 +101,7 @@ fun PdfViewerScreen(
             repeat(pageCount) { pageBitmaps.add(null) }
             isLoading = false
         } catch (e: Exception) {
-            error = e.message
+            errorRes = if (e is SecurityException) R.string.viewer_error_protected else R.string.viewer_error
             isLoading = false
         }
 
@@ -136,13 +136,13 @@ fun PdfViewerScreen(
                         CircularProgressIndicator(color = PrimaryRed)
                     }
                 }
-                error != null -> {
+                errorRes != null -> {
                     Box(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = error ?: "Unknown error",
+                            text = stringResource(errorRes ?: R.string.viewer_error),
                             color = TextSecondary,
                             fontSize = 16.sp
                         )

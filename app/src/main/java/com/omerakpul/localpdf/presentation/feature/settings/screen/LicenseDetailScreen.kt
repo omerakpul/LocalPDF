@@ -1,5 +1,8 @@
 package com.omerakpul.localpdf.presentation.feature.settings.screen
 
+import com.omerakpul.localpdf.presentation.components.AppTopBar
+import com.omerakpul.localpdf.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -43,15 +46,7 @@ fun LicenseDetailsScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Open Source Licenses", color = TextPrimary) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = TextPrimary)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = BackgroundColor)
-            )
+            AppTopBar(title = stringResource(R.string.settings_licenses), onBack = onBack)
         }
     ) { paddingValues ->
         Column(
@@ -79,6 +74,31 @@ fun LicenseDetailsScreen(
             Spacer(modifier = Modifier.height(32.dp))
 
             Text(
+                text = stringResource(R.string.licenses_third_party),
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = TextPrimary
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            thirdPartyComponents.forEach { (name, owner) ->
+                Text(
+                    text = "$name — $owner",
+                    fontSize = 12.sp,
+                    color = TextSecondary,
+                    lineHeight = 18.sp
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = stringResource(R.string.licenses_apache_note),
+                fontSize = 12.sp,
+                color = TextSecondary,
+                lineHeight = 18.sp
+            )
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            Text(
                 text = "APACHE LICENSE 2.0",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
@@ -96,3 +116,14 @@ fun LicenseDetailsScreen(
         }
     }
 }
+
+/** Libraries bundled in the app (all under the Apache License 2.0). */
+private val thirdPartyComponents = listOf(
+    "Kotlin, kotlinx.coroutines, kotlinx.serialization" to "JetBrains",
+    "AndroidX, Jetpack Compose, Navigation, Room, Material Icons" to "Google",
+    "Dagger / Hilt" to "Google",
+    "Coil" to "Coil Contributors",
+    "Apache PDFBox (Android port)" to "Apache Software Foundation, Tom Roush",
+    "Apache POI" to "Apache Software Foundation",
+    "shadcn-compose" to "ronjunevaldoz and contributors"
+)

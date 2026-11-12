@@ -1,5 +1,6 @@
 package com.omerakpul.localpdf.presentation.feature.merge.screen
 
+import com.omerakpul.localpdf.domain.util.formatFileSize
 import androidx.compose.material.icons.rounded.Add
 import com.omerakpul.localpdf.presentation.components.SecondaryButton
 import com.omerakpul.localpdf.presentation.components.PrimaryButton
@@ -70,12 +71,20 @@ import com.omerakpul.localpdf.presentation.theme.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MergeScreen(
+    initialUris: List<String> = emptyList(),
     onBack: () -> Unit,
     onNavigateToDetail: (String) -> Unit,
     viewModel: MergePdfViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+
+    // PDFs handed over from another app's share sheet
+    LaunchedEffect(Unit) {
+        if (initialUris.isNotEmpty()) {
+            viewModel.addPdfs(initialUris.map { Uri.parse(it) })
+        }
+    }
 
     val pdfPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenMultipleDocuments()
@@ -296,10 +305,3 @@ private fun PdfFileItem(
     }
 }
 
-private fun formatFileSize(size: Long): String {
-    return when {
-        size < 1024 -> "$size B"
-        size < 1024 * 1024 -> String.format("%.1f KB", size / 1024.0)
-        else -> String.format("%.1f MB", size / (1024.0 * 1024.0))
-    }
-}

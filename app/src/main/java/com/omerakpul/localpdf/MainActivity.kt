@@ -50,6 +50,8 @@ class MainActivity : ComponentActivity() {
 
     // Path of a PDF received from another app (VIEW / SEND), consumed by the nav host
     private var incomingPdfPath by mutableStateOf<String?>(null)
+    // PDFs shared together (SEND_MULTIPLE): opened in the merge screen
+    private var incomingMergePaths by mutableStateOf<List<String>>(emptyList())
 
     @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -101,7 +103,9 @@ class MainActivity : ComponentActivity() {
                         LocalPdfNavHost(
                             windowSizeClass = windowSizeClass.widthSizeClass,
                             incomingPdfPath = incomingPdfPath,
-                            onIncomingPdfHandled = { incomingPdfPath = null }
+                            onIncomingPdfHandled = { incomingPdfPath = null },
+                            incomingMergePaths = incomingMergePaths,
+                            onIncomingMergeHandled = { incomingMergePaths = emptyList() }
                         )
                     }
                 }
@@ -116,35 +120,49 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun handleIncomingIntent(intent: Intent?) {
-        val uri: Uri? = when (intent?.action) {
-            Intent.ACTION_VIEW -> intent.data
-            Intent.ACTION_SEND -> IntentCompat.getParcelableExtra(intent, Intent.EXTRA_STREAM, Uri::class.java)
-            else -> null
+        val uris: List<Uri> = when (intent?.action) {
+            Intent.ACTION_VIEW -> listOfNotNull(intent.data)
+            Intent.ACTION_SEND -> listOfNotNull(
+                IntentCompat.getParcelableExtra(intent, Intent.EXTRA_STREAM, Uri::class.java)
+            )
+            Intent.ACTION_SEND_MULTIPLE ->
+                IntentCompat.getParcelableArrayListExtra(intent, Intent.EXTRA_STREAM, Uri::class.java).orEmpty()
+            else -> emptyList()
         }
-        if (uri == null) return
+        if (uris.isEmpty()) return
+        val openMerge = intent?.action == Intent.ACTION_SEND_MULTIPLE && uris.size > 1
 
         lifecycleScope.launch {
-            val path = withContext(Dispatchers.IO) { copyToCache(uri) }
-            if (path != null) {
-                incomingPdfPath = path
-            } else {
-                Toast.makeText(this@MainActivity, R.string.error_cannot_open_file, Toast.LENGTH_LONG).show()
+            val paths = withContext(Dispatchers.IO) { copyAllToCache(uris) }
+            when {
+                paths.isEmpty() ->
+                    Toast.makeText(this@MainActivity, R.string.error_cannot_open_file, Toast.LENGTH_LONG).show()
+                openMerge -> incomingMergePaths = paths
+                else -> incomingPdfPath = paths.first()
             }
         }
     }
 
-    /** Copies a shared PDF into the app cache so the in-app viewer can open it by path. */
-    private fun copyToCache(uri: Uri): String? {
+    /**
+     * Copies shared PDFs into the app cache so they stay readable after the sender's temporary
+     * permission ends. Copies from earlier shares are removed first so they do not pile up.
+     */
+    private fun copyAllToCache(uris: List<Uri>): List<String> {
+        val dir = File(cacheDir, "incoming").apply { mkdirs() }
+        dir.listFiles()?.forEach { it.delete() }
+        return uris.mapIndexedNotNull { index, uri -> copyToCache(uri, dir, index) }
+    }
+
+    private fun copyToCache(uri: Uri, dir: File, index: Int): String? {
         return try {
             val displayName = contentResolver.query(uri, null, null, null, null)?.use { cursor ->
-                val index = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-                if (cursor.moveToFirst() && index >= 0) cursor.getString(index) else null
+                val column = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                if (cursor.moveToFirst() && column >= 0) cursor.getString(column) else null
             }
             val safeName = File(displayName ?: "shared.pdf").name.ifBlank { "shared.pdf" }
-            val dir = File(cacheDir, "incoming").apply { mkdirs() }
-            // Remove copies of previously shared files so they do not pile up in the cache
-            dir.listFiles()?.forEach { it.delete() }
-            val target = File(dir, if (safeName.endsWith(".pdf", ignoreCase = true)) safeName else "$safeName.pdf")
+            val withExtension = if (safeName.endsWith(".pdf", ignoreCase = true)) safeName else "$safeName.pdf"
+            var target = File(dir, withExtension)
+            if (target.exists()) target = File(dir, "${index}_$withExtension")
             contentResolver.openInputStream(uri)?.use { input ->
                 target.outputStream().use { output -> input.copyTo(output) }
             } ?: return null
