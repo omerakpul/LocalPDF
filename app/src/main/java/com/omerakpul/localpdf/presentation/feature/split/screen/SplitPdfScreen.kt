@@ -1,5 +1,18 @@
+@file:OptIn(ExperimentalFoundationStyleApi::class)
+
 package com.omerakpul.localpdf.presentation.feature.split.screen
 
+import androidx.compose.foundation.style.ExperimentalFoundationStyleApi
+import io.github.ronjunevaldoz.shadcncompose.components.ShadcnIcon
+import io.github.ronjunevaldoz.shadcncompose.components.ShadcnChip
+import androidx.compose.material.icons.rounded.ContentCut
+import com.omerakpul.localpdf.presentation.components.SecondaryButton
+import com.omerakpul.localpdf.presentation.components.PrimaryButton
+import com.omerakpul.localpdf.presentation.components.FileSummaryCard
+import com.omerakpul.localpdf.presentation.components.EmptyState
+import com.omerakpul.localpdf.presentation.components.AppScreen
+import androidx.compose.material.icons.rounded.PictureAsPdf
+import androidx.compose.foundation.layout.PaddingValues
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -96,76 +109,26 @@ fun SplitPdfScreen(
         }
     }
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.split_pdf), color = TextPrimary) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = TextPrimary)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = BackgroundColor)
-            )
-        }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(BackgroundColor)
-                .padding(paddingValues)
-        ) {
+    AppScreen(
+        title = stringResource(R.string.split_pdf),
+        onBack = onBack,
+        snackbarHostState = snackbarHostState
+    ) {
             if (uiState.selectedPdf == null) {
                 // Empty state
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Box(
-                            modifier = Modifier
-                                .size(100.dp)
-                                .clip(RoundedCornerShape(50.dp))
-                                .background(CardBackground),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.ContentCut,
-                                contentDescription = null,
-                                modifier = Modifier.size(48.dp),
-                                tint = SplitIconColor
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = stringResource(R.string.split_empty),
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = TextPrimary
-                        )
-                        Text(
-                            text = stringResource(R.string.split_empty_subtitle),
-                            fontSize = 14.sp,
-                            color = TextSecondary
-                        )
-                    }
-                }
+                EmptyState(
+                    icon = Icons.Rounded.ContentCut,
+                    title = stringResource(R.string.split_empty),
+                    description = stringResource(R.string.split_empty_subtitle),
+                    modifier = Modifier.weight(1f)
+                )
 
-                Button(
+                PrimaryButton(
+                    text = stringResource(R.string.split_select_pdf),
                     onClick = { pdfPickerLauncher.launch(arrayOf("application/pdf")) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryRed)
-                ) {
-                    Icon(Icons.Default.PictureAsPdf, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(stringResource(R.string.split_select_pdf))
-                }
+                    icon = Icons.Rounded.PictureAsPdf,
+                    modifier = Modifier.padding(16.dp)
+                )
             } else {
                 // PDF Selected
                 Column(
@@ -200,7 +163,7 @@ fun SplitPdfScreen(
                                 overflow = TextOverflow.Ellipsis
                             )
                             Text(
-                                text = "${uiState.pageCount} pages",
+                                text = stringResource(R.string.pages_count, uiState.pageCount),
                                 fontSize = 14.sp,
                                 color = TextSecondary
                             )
@@ -226,32 +189,20 @@ fun SplitPdfScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        FilterChip(
+                        ShadcnChip(
+                            label = stringResource(R.string.split_mode_all),
                             selected = uiState.splitMode == SplitMode.EXTRACT_ALL,
-                            onClick = { viewModel.setSplitMode(SplitMode.EXTRACT_ALL) },
-                            label = { Text(stringResource(R.string.split_mode_all)) },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = PrimaryRed,
-                                selectedLabelColor = CardBackground
-                            )
+                            onClick = { viewModel.setSplitMode(SplitMode.EXTRACT_ALL) }
                         )
-                        FilterChip(
+                        ShadcnChip(
+                            label = stringResource(R.string.split_mode_range),
                             selected = uiState.splitMode == SplitMode.RANGE,
-                            onClick = { viewModel.setSplitMode(SplitMode.RANGE) },
-                            label = { Text(stringResource(R.string.split_mode_range)) },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = PrimaryRed,
-                                selectedLabelColor = CardBackground
-                            )
+                            onClick = { viewModel.setSplitMode(SplitMode.RANGE) }
                         )
-                        FilterChip(
+                        ShadcnChip(
+                            label = stringResource(R.string.split_mode_select),
                             selected = uiState.splitMode == SplitMode.SELECT_PAGES,
-                            onClick = { viewModel.setSplitMode(SplitMode.SELECT_PAGES) },
-                            label = { Text(stringResource(R.string.split_mode_select)) },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = PrimaryRed,
-                                selectedLabelColor = CardBackground
-                            )
+                            onClick = { viewModel.setSplitMode(SplitMode.SELECT_PAGES) }
                         )
                     }
 
@@ -375,28 +326,14 @@ fun SplitPdfScreen(
                 }
 
                 // Split Button
-                Button(
+                PrimaryButton(
+                    text = stringResource(R.string.split_button),
                     onClick = { viewModel.splitPdf() },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
+                    icon = Icons.Rounded.ContentCut,
                     enabled = uiState.canSplit,
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryRed)
-                ) {
-                    if (uiState.isLoading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(20.dp),
-                            color = CardBackground,
-                            strokeWidth = 2.dp
-                        )
-                    } else {
-                        Icon(Icons.Default.ContentCut, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(stringResource(R.string.split_button))
-                    }
-                }
+                    loading = uiState.isLoading,
+                    modifier = Modifier.padding(16.dp)
+                )
             }
-        }
-    }
+            }
 }

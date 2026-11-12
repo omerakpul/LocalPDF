@@ -235,5 +235,14 @@
     <string name="convert_empty_images_subtitle">Select a PDF to save its pages as images</string>
     <string name="convert_images_saved">%1$d images saved to Pictures/LocalPDF</string>
     <string name="recent_files">Recent Files</string>
+    <string name="home_tagline">Everything stays on your device</string>
+    <string name="files_count">%1$d files</string>
+    <string name="pages_count">%1$d pages</string>
+    <string name="settings_licenses_desc">Open source libraries</string>
+    <string name="detail_created">%1$s created successfully!</string>
+    <string name="detail_size">Size</string>
+    <string name="detail_pages">Pages</string>
+    <string name="detail_created_date">Created</string>
+    <string name="detail_saved">Saved to Downloads!</string>
 </resources>
 

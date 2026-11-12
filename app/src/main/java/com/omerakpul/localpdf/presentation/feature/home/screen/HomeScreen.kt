@@ -1,5 +1,15 @@
 package com.omerakpul.localpdf.presentation.feature.home.screen
 
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material.icons.rounded.SwapHoriz
+import androidx.compose.material.icons.rounded.Lock
+import androidx.compose.material.icons.rounded.EditNote
+import androidx.compose.material.icons.rounded.Draw
+import androidx.compose.material.icons.rounded.DocumentScanner
+import androidx.compose.material.icons.rounded.ContentCut
+import androidx.compose.material.icons.rounded.Compress
+import androidx.compose.material.icons.rounded.CallMerge
+import androidx.compose.foundation.border
 import java.util.Locale
 import java.util.Date
 import java.text.SimpleDateFormat
@@ -78,12 +88,14 @@ fun HomeScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    val features = remember {
+    // Keyed on the theme: the tile colours are theme dependent and must be rebuilt when it changes
+    val isDarkTheme = com.omerakpul.localpdf.presentation.theme.isDarkThemeActive
+    val features = remember(isDarkTheme) {
         listOf(
             FeatureItem(
                 titleResId = R.string.merge_pdf,
                 descResId = R.string.merge_pdf_desc,
-                icon = Icons.Default.CallMerge,
+                icon = Icons.Rounded.CallMerge,
                 bgColor = MergeColor,
                 iconColor = MergeIconColor,
                 onClick = onNavigateToMerge
@@ -91,7 +103,7 @@ fun HomeScreen(
             FeatureItem(
                 titleResId = R.string.split_pdf,
                 descResId = R.string.split_pdf_desc,
-                icon = Icons.Default.ContentCut,
+                icon = Icons.Rounded.ContentCut,
                 bgColor = SplitColor,
                 iconColor = SplitIconColor,
                 onClick = onNavigateToSplit
@@ -99,7 +111,7 @@ fun HomeScreen(
             FeatureItem(
                 titleResId = R.string.compress_pdf,
                 descResId = R.string.compress_pdf_desc,
-                icon = Icons.Default.Compress,
+                icon = Icons.Rounded.Compress,
                 bgColor = CompressColor,
                 iconColor = CompressIconColor,
                 onClick = onNavigateToCompress
@@ -107,7 +119,7 @@ fun HomeScreen(
             FeatureItem(
                 titleResId = R.string.convert_pdf,
                 descResId = R.string.convert_pdf_desc,
-                icon = Icons.Default.SwapHoriz,
+                icon = Icons.Rounded.SwapHoriz,
                 bgColor = ConvertColor,
                 iconColor = ConvertIconColor,
                 onClick = onNavigateToConvert
@@ -115,7 +127,7 @@ fun HomeScreen(
             FeatureItem(
                 titleResId = R.string.photo_to_pdf,
                 descResId = R.string.photo_to_pdf_desc,
-                icon = Icons.Default.PhotoCamera,
+                icon = Icons.Rounded.DocumentScanner,
                 bgColor = ScanColor,
                 iconColor = ScanIconColor,
                 onClick = onNavigateToPhotoToPdf
@@ -123,7 +135,7 @@ fun HomeScreen(
             FeatureItem(
                 titleResId = R.string.sign_pdf,
                 descResId = R.string.sign_pdf_desc,
-                icon = Icons.Default.Draw,
+                icon = Icons.Rounded.Draw,
                 bgColor = SignColor,
                 iconColor = SignIconColor,
                 onClick = onNavigateToSign
@@ -131,9 +143,9 @@ fun HomeScreen(
             FeatureItem(
                 titleResId = R.string.edit_pdf,
                 descResId = R.string.edit_pdf_desc,
-                icon = Icons.Default.Edit,
-                bgColor = MergeColor,
-                iconColor = MergeIconColor,
+                icon = Icons.Rounded.EditNote,
+                bgColor = EditColor,
+                iconColor = EditIconColor,
                 onClick = onNavigateToEdit
             )
         )
@@ -204,70 +216,65 @@ private fun HomeContent(
             .background(BackgroundColor)
             .padding(horizontal = if (isCompact) 16.dp else 32.dp)
     ) {
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Column(
+        // Brand header: logo tile, app name and an "offline" tagline
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .padding(top = 20.dp, bottom = 24.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .size(56.dp)
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(PrimaryRed.copy(alpha = 0.10f)),
+                contentAlignment = Alignment.Center
+            ) {
                 Image(
-                    painter = painterResource(id = R.drawable.lpdflogo),
-                    contentDescription = "Logo",
-                    modifier = Modifier.size(38.dp).scale(2.75f)
-                )
-
-                Text(
-                    text = stringResource(R.string.app_name),
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = TextPrimary,
-                    modifier = Modifier.padding(start = 8.dp)
+                    painter = painterResource(id = R.drawable.logo_mark),
+                    contentDescription = null,
+                    modifier = Modifier.size(56.dp).scale(1.9f)
                 )
             }
 
-            // Red underline
-            Box(
-                modifier = Modifier
-                    .padding(top = 8.dp)
-                    .fillMaxWidth(0.3f)
-                    .height(3.dp)
-                    .clip(RoundedCornerShape(2.dp))
-                    .background(PrimaryRed)
-            )
+            Column(modifier = Modifier.padding(start = 14.dp)) {
+                Text(
+                    text = stringResource(R.string.app_name),
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = TextPrimary
+                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(top = 2.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Lock,
+                        contentDescription = null,
+                        tint = SuccessGreen,
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Text(
+                        text = stringResource(R.string.home_tagline),
+                        fontSize = 13.sp,
+                        color = TextSecondary,
+                        modifier = Modifier.padding(start = 4.dp)
+                    )
+                }
+            }
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // Quick Actions header
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = stringResource(R.string.quick_actions),
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = TextPrimary
-            )
-            Text(
-                text = stringResource(R.string.quick_actions_subtitle),
-                fontSize = 14.sp,
-                color = TextSecondary,
-                modifier = Modifier.padding(top = 4.dp)
-            )
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
+        Text(
+            text = stringResource(R.string.quick_actions),
+            style = MaterialTheme.typography.titleMedium,
+            color = TextPrimary
+        )
 
         // Adaptive Feature cards grid
         LazyVerticalGrid(
             columns = if (isCompact) GridCells.Fixed(2) else GridCells.Adaptive(minSize = 180.dp),
             contentPadding = PaddingValues(start = 0.dp, end = 0.dp, top = 8.dp, bottom = 24.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             items(
                 items = features,
@@ -314,8 +321,9 @@ private fun RecentFileRow(pdf: Pdf, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(16.dp))
             .background(CardBackground)
+            .border(1.dp, OutlineColor, RoundedCornerShape(16.dp))
             .clickable(onClick = onClick)
             .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically

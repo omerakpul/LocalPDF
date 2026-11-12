@@ -1,5 +1,32 @@
+@file:OptIn(ExperimentalFoundationStyleApi::class)
+
 package com.omerakpul.localpdf.presentation.feature.settings.screen
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.style.ExperimentalFoundationStyleApi
+import io.github.ronjunevaldoz.shadcncompose.styles.ButtonVariant
+import io.github.ronjunevaldoz.shadcncompose.components.ShadcnTextStyle
+import io.github.ronjunevaldoz.shadcncompose.components.ShadcnText
+import io.github.ronjunevaldoz.shadcncompose.components.ShadcnSeparator
+import io.github.ronjunevaldoz.shadcncompose.components.ShadcnItemVariant
+import io.github.ronjunevaldoz.shadcncompose.components.ShadcnItemTitle
+import io.github.ronjunevaldoz.shadcncompose.components.ShadcnItemDescription
+import io.github.ronjunevaldoz.shadcncompose.components.ShadcnItemContent
+import io.github.ronjunevaldoz.shadcncompose.components.ShadcnItemActions
+import io.github.ronjunevaldoz.shadcncompose.components.ShadcnItem
+import io.github.ronjunevaldoz.shadcncompose.components.ShadcnIcon
+import io.github.ronjunevaldoz.shadcncompose.components.ShadcnDialogTitle
+import io.github.ronjunevaldoz.shadcncompose.components.ShadcnDialogHeader
+import io.github.ronjunevaldoz.shadcncompose.components.ShadcnDialogFooter
+import io.github.ronjunevaldoz.shadcncompose.components.ShadcnDialog
+import io.github.ronjunevaldoz.shadcncompose.components.ShadcnButton
+import com.omerakpul.localpdf.presentation.theme.OutlineColor
+import androidx.compose.runtime.remember
+import androidx.compose.material.icons.rounded.ChevronRight
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.border
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -132,42 +159,19 @@ private fun ThemeDialog(
     onDismiss: () -> Unit,
     onThemeSelected: (ThemeMode) -> Unit
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.settings_theme), fontWeight = FontWeight.Bold) },
-        text = {
-            Column {
-                ThemeMode.entries.forEach { mode ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onThemeSelected(mode) }
-                            .padding(vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        RadioButton(
-                            selected = themeMode == mode,
-                            onClick = { onThemeSelected(mode) },
-                            colors = RadioButtonDefaults.colors(selectedColor = PrimaryRed)
-                        )
-                        Text(
-                            text = when (mode) {
-                                ThemeMode.SYSTEM -> stringResource(R.string.theme_system)
-                                ThemeMode.LIGHT -> stringResource(R.string.theme_light)
-                                ThemeMode.DARK -> stringResource(R.string.theme_dark)
-                            },
-                            fontSize = 16.sp,
-                            modifier = Modifier.padding(start = 8.dp)
-                        )
-                    }
-                }
+    ChoiceDialog(
+        title = stringResource(R.string.settings_theme),
+        options = ThemeMode.entries.toList(),
+        selected = themeMode,
+        label = { mode ->
+            when (mode) {
+                ThemeMode.SYSTEM -> stringResource(R.string.theme_system)
+                ThemeMode.LIGHT -> stringResource(R.string.theme_light)
+                ThemeMode.DARK -> stringResource(R.string.theme_dark)
             }
         },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.action_cancel), color = PrimaryRed)
-            }
-        }
+        onSelect = onThemeSelected,
+        onDismiss = onDismiss
     )
 }
 
@@ -177,41 +181,59 @@ private fun LanguageDialog(
     onDismiss: () -> Unit,
     onLanguageSelected: (AppLanguage) -> Unit
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.settings_language), fontWeight = FontWeight.Bold) },
-        text = {
-            Column {
-                AppLanguage.entries.forEach { lang ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onLanguageSelected(lang) }
-                            .padding(vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        RadioButton(
-                            selected = language == lang,
-                            onClick = { onLanguageSelected(lang) },
-                            colors = RadioButtonDefaults.colors(selectedColor = PrimaryRed)
-                        )
-                        Text(
-                            text = lang.displayName,
-                            fontSize = 16.sp,
-                            modifier = Modifier.padding(start = 8.dp)
-                        )
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.action_cancel), color = PrimaryRed)
-            }
-        }
+    ChoiceDialog(
+        title = stringResource(R.string.settings_language),
+        options = AppLanguage.entries.toList(),
+        selected = language,
+        label = { it.displayName },
+        onSelect = onLanguageSelected,
+        onDismiss = onDismiss
     )
 }
 
+/** Dialog that lists a few options; the selected one gets an outline and a check mark. */
+@Composable
+private fun <T> ChoiceDialog(
+    title: String,
+    options: List<T>,
+    selected: T,
+    label: @Composable (T) -> String,
+    onSelect: (T) -> Unit,
+    onDismiss: () -> Unit
+) {
+    ShadcnDialog(visible = true, onDismissRequest = onDismiss) {
+        ShadcnDialogHeader {
+            ShadcnDialogTitle(title)
+        }
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            options.forEach { option ->
+                val isSelected = option == selected
+                ShadcnItem(
+                    variant = if (isSelected) ShadcnItemVariant.Outline else ShadcnItemVariant.Default,
+                    onClick = { onSelect(option) }
+                ) {
+                    ShadcnItemContent {
+                        ShadcnItemTitle(text = label(option))
+                    }
+                    if (isSelected) {
+                        ShadcnItemActions {
+                            ShadcnIcon(
+                                imageVector = Icons.Rounded.Check,
+                                tint = PrimaryRed,
+                                contentDescription = null
+                            )
+                        }
+                    }
+                }
+            }
+        }
+        ShadcnDialogFooter {
+            ShadcnButton(onClick = onDismiss, variant = ButtonVariant.Outline) {
+                ShadcnText(stringResource(R.string.action_cancel))
+            }
+        }
+    }
+}
 
 @Composable
 private fun SettingsContent(
@@ -222,6 +244,11 @@ private fun SettingsContent(
     modifier: Modifier = Modifier
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
+    val versionName = remember {
+        runCatching {
+            context.packageManager.getPackageInfo(context.packageName, 0).versionName
+        }.getOrNull().orEmpty()
+    }
 
     Column(
         modifier = modifier
@@ -230,113 +257,81 @@ private fun SettingsContent(
             .padding(horizontal = if (isCompact) 16.dp else 32.dp)
             .verticalScroll(rememberScrollState())
     ) {
-        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = stringResource(R.string.settings_title),
+            style = MaterialTheme.typography.headlineSmall,
+            color = TextPrimary,
+            modifier = Modifier.padding(top = 20.dp, bottom = 20.dp)
+        )
 
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = stringResource(R.string.settings_title),
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
-                color = TextPrimary
+        SettingsGroup(title = stringResource(R.string.settings_appearance)) {
+            SettingsRow(
+                icon = Icons.Outlined.DarkMode,
+                title = stringResource(R.string.settings_theme),
+                subtitle = when (uiState.themeMode) {
+                    ThemeMode.SYSTEM -> stringResource(R.string.theme_system)
+                    ThemeMode.LIGHT -> stringResource(R.string.theme_light)
+                    ThemeMode.DARK -> stringResource(R.string.theme_dark)
+                },
+                onClick = { viewModel.showThemeDialog() }
             )
-            Box(
-                modifier = Modifier
-                    .padding(top = 8.dp)
-                    .fillMaxWidth(0.15f)
-                    .height(3.dp)
-                    .clip(RoundedCornerShape(2.dp))
-                    .background(PrimaryRed)
+            ShadcnSeparator()
+            SettingsRow(
+                icon = Icons.Outlined.Language,
+                title = stringResource(R.string.settings_language),
+                subtitle = uiState.language.displayName,
+                onClick = { viewModel.showLanguageDialog() }
             )
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        SettingsGroup(title = stringResource(R.string.settings_about)) {
+            SettingsRow(
+                icon = Icons.Outlined.Info,
+                title = stringResource(R.string.settings_version),
+                subtitle = versionName,
+                onClick = null
+            )
+            ShadcnSeparator()
+            SettingsRow(
+                icon = Icons.Outlined.Policy,
+                title = stringResource(R.string.settings_licenses),
+                subtitle = stringResource(R.string.settings_licenses_desc),
+                onClick = { onNavigateToLicenseDetails() }
+            )
+            ShadcnSeparator()
+            SettingsRow(
+                icon = Icons.Outlined.Code,
+                title = stringResource(R.string.settings_github),
+                subtitle = "github.com/omerakpul/LocalPDF",
+                onClick = {
+                    val intent = android.content.Intent(
+                        android.content.Intent.ACTION_VIEW,
+                        android.net.Uri.parse("https://github.com/omerakpul/LocalPDF")
+                    )
+                    context.startActivity(intent)
+                }
+            )
+        }
 
-        SectionHeader(title = stringResource(R.string.settings_appearance))
-        Spacer(modifier = Modifier.height(8.dp))
-
-        SettingsItem(
-            icon = Icons.Outlined.DarkMode,
-            title = stringResource(R.string.settings_theme),
-            subtitle = when (uiState.themeMode) {
-                ThemeMode.SYSTEM -> stringResource(R.string.theme_system)
-                ThemeMode.LIGHT -> stringResource(R.string.theme_light)
-                ThemeMode.DARK -> stringResource(R.string.theme_dark)
-            },
-            onClick = { viewModel.showThemeDialog() }
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        SettingsItem(
-            icon = Icons.Outlined.Language,
-            title = stringResource(R.string.settings_language),
-            subtitle = uiState.language.displayName,
-            onClick = { viewModel.showLanguageDialog() }
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        SectionHeader(title = stringResource(R.string.settings_about))
-        Spacer(modifier = Modifier.height(8.dp))
-
-        SettingsItem(
-            icon = Icons.Outlined.Info,
-            title = stringResource(R.string.settings_version),
-            subtitle = "1.0.0",
-            onClick = { }
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        SettingsItem(
-            icon = Icons.Outlined.Policy,
-            title = stringResource(R.string.settings_licenses),
-            subtitle = "Open Source Libraries",
-            onClick = { onNavigateToLicenseDetails() }
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        SettingsItem(
-            icon = Icons.Outlined.Code,
-            title = stringResource(R.string.settings_github),
-            subtitle = "github.com/omerakpul/LocalPDF",
-            onClick = {
-                val intent = android.content.Intent(
-                    android.content.Intent.ACTION_VIEW,
-                    android.net.Uri.parse("https://github.com/omerakpul/LocalPDF")
-                )
-                context.startActivity(intent)
-            }
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // About info card
+        // Privacy note
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
-                .background(PrimaryRed.copy(alpha = 0.08f))
+                .clip(RoundedCornerShape(16.dp))
+                .background(PrimaryRed.copy(alpha = 0.06f))
+                .border(1.dp, PrimaryRed.copy(alpha = 0.18f), RoundedCornerShape(16.dp))
                 .padding(16.dp),
             verticalAlignment = Alignment.Top
         ) {
-            Icon(
+            ShadcnIcon(
                 imageVector = Icons.Outlined.Security,
-                contentDescription = null,
                 tint = PrimaryRed,
-                modifier = Modifier.size(22.dp)
+                contentDescription = null
             )
-            Text(
+            ShadcnText(
                 text = stringResource(R.string.about_local_info),
-                fontSize = 13.sp,
-                color = TextSecondary,
-                lineHeight = 19.sp,
+                style = ShadcnTextStyle.BodySmall,
+                muted = true,
                 modifier = Modifier.padding(start = 12.dp)
             )
         }
@@ -345,57 +340,62 @@ private fun SettingsContent(
     }
 }
 
+/** A titled group of rows inside one bordered card. */
 @Composable
-private fun SectionHeader(title: String) {
-    Text(
+private fun SettingsGroup(
+    title: String,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    ShadcnText(
         text = title.uppercase(),
-        fontSize = 12.sp,
+        style = ShadcnTextStyle.LabelSmall,
+        muted = true,
         fontWeight = FontWeight.SemiBold,
-        color = TextSecondary,
-        letterSpacing = 1.sp
+        modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
     )
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(CardBackground)
+            .border(1.dp, OutlineColor, RoundedCornerShape(16.dp)),
+        content = content
+    )
+    Spacer(modifier = Modifier.height(24.dp))
 }
 
 @Composable
-private fun SettingsItem(
+private fun SettingsRow(
     icon: ImageVector,
     title: String,
     subtitle: String?,
-    onClick: () -> Unit
+    onClick: (() -> Unit)?
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .background(CardBackground)
-            .clickable(onClick = onClick)
-            .padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically
+    ShadcnItem(
+        modifier = Modifier.fillMaxWidth(),
+        onClick = onClick
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = PrimaryRed,
-            modifier = Modifier.size(24.dp)
-        )
-
-        Column(
+        Box(
             modifier = Modifier
-                .weight(1f)
-                .padding(start = 16.dp)
+                .size(40.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(PrimaryRed.copy(alpha = 0.10f)),
+            contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = title,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Medium,
-                color = TextPrimary
-            )
-            if (subtitle != null) {
-                Text(
-                    text = subtitle,
-                    fontSize = 14.sp,
-                    color = TextSecondary,
-                    modifier = Modifier.padding(top = 2.dp)
+            ShadcnIcon(imageVector = icon, tint = PrimaryRed, contentDescription = null)
+        }
+        ShadcnItemContent {
+            ShadcnItemTitle(text = title)
+            if (!subtitle.isNullOrEmpty()) {
+                ShadcnItemDescription(text = subtitle)
+            }
+        }
+        if (onClick != null) {
+            ShadcnItemActions {
+                ShadcnIcon(
+                    imageVector = Icons.Rounded.ChevronRight,
+                    contentDescription = null,
+                    small = true
                 )
             }
         }

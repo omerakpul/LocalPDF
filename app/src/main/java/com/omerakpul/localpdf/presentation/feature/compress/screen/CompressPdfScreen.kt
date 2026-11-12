@@ -1,5 +1,13 @@
 package com.omerakpul.localpdf.presentation.feature.compress.screen
 
+import androidx.compose.material.icons.rounded.Compress
+import com.omerakpul.localpdf.presentation.components.SecondaryButton
+import com.omerakpul.localpdf.presentation.components.PrimaryButton
+import com.omerakpul.localpdf.presentation.components.FileSummaryCard
+import com.omerakpul.localpdf.presentation.components.EmptyState
+import com.omerakpul.localpdf.presentation.components.AppScreen
+import androidx.compose.material.icons.rounded.PictureAsPdf
+import androidx.compose.foundation.layout.PaddingValues
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -89,77 +97,27 @@ fun CompressPdfScreen(
         }
     }
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.compress_pdf), color = TextPrimary) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = TextPrimary)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = BackgroundColor)
-            )
-        }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(BackgroundColor)
-                .padding(paddingValues)
-        ) {
+    AppScreen(
+        title = stringResource(R.string.compress_pdf),
+        onBack = onBack,
+        snackbarHostState = snackbarHostState
+    ) {
             if (uiState.selectedPdf == null) {
                 // Empty state - Select PDF
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Box(
-                            modifier = Modifier
-                                .size(100.dp)
-                                .clip(RoundedCornerShape(50.dp))
-                                .background(CardBackground),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Compress,
-                                contentDescription = null,
-                                modifier = Modifier.size(48.dp),
-                                tint = PrimaryRed.copy(alpha = 0.7f)
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = stringResource(R.string.compress_empty),
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = TextPrimary
-                        )
-                        Text(
-                            text = stringResource(R.string.compress_empty_subtitle),
-                            fontSize = 14.sp,
-                            color = TextSecondary
-                        )
-                    }
-                }
+                EmptyState(
+                    icon = Icons.Rounded.Compress,
+                    title = stringResource(R.string.compress_empty),
+                    description = stringResource(R.string.compress_empty_subtitle),
+                    modifier = Modifier.weight(1f)
+                )
 
                 // Select PDF button
-                Button(
+                PrimaryButton(
+                    text = stringResource(R.string.compress_select_pdf),
                     onClick = { pdfPickerLauncher.launch(arrayOf("application/pdf")) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryRed)
-                ) {
-                    Icon(Icons.Default.PictureAsPdf, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(stringResource(R.string.compress_select_pdf))
-                }
+                    icon = Icons.Rounded.PictureAsPdf,
+                    modifier = Modifier.padding(16.dp)
+                )
             } else {
                 // PDF Selected - Show compression options
                 Column(
@@ -193,7 +151,7 @@ fun CompressPdfScreen(
                                 overflow = TextOverflow.Ellipsis
                             )
                             Text(
-                                text = "${formatFileSize(uiState.originalSize)} • ${uiState.pageCount} pages",
+                                text = "${formatFileSize(uiState.originalSize)} • ${stringResource(R.string.pages_count, uiState.pageCount)}",
                                 fontSize = 14.sp,
                                 color = TextSecondary
                             )
@@ -330,30 +288,16 @@ fun CompressPdfScreen(
                 }
 
                 // Compress Button
-                Button(
+                PrimaryButton(
+                    text = stringResource(R.string.compress_button),
                     onClick = { viewModel.compressPdf() },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
+                    icon = Icons.Rounded.Compress,
                     enabled = uiState.canCompress,
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryRed)
-                ) {
-                    if (uiState.isLoading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(20.dp),
-                            color = CardBackground,
-                            strokeWidth = 2.dp
-                        )
-                    } else {
-                        Icon(Icons.Default.Compress, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(stringResource(R.string.compress_button))
-                    }
-                }
+                    loading = uiState.isLoading,
+                    modifier = Modifier.padding(16.dp)
+                )
             }
-        }
-    }
+            }
 }
 
 @Composable

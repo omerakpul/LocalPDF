@@ -1,4 +1,10 @@
 package com.omerakpul.localpdf.presentation.navigation
+import androidx.navigation.NavDestination.Companion.hasRoute
+import androidx.navigation.NavBackStackEntry
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
@@ -41,40 +47,17 @@ fun LocalPdfNavHost(
     NavHost(
         navController = navController,
         startDestination = Home,
-        // Default: slide + fade for sub-screens (Merge, Split, Detail etc.)
-        enterTransition = {
-            slideIntoContainer(
-                towards = AnimatedContentTransitionScope.SlideDirection.Start,
-                animationSpec = tween(300, easing = FastOutSlowInEasing),
-                initialOffset = { it / 4 }  // only 25% slide — subtle & fast
-            ) + fadeIn(tween(300))
-        },
-        exitTransition = {
-            slideOutOfContainer(
-                towards = AnimatedContentTransitionScope.SlideDirection.Start,
-                animationSpec = tween(300, easing = FastOutSlowInEasing),
-                targetOffset = { it / 4 }
-            ) + fadeOut(tween(150))
-        },
-        popEnterTransition = {
-            slideIntoContainer(
-                towards = AnimatedContentTransitionScope.SlideDirection.End,
-                animationSpec = tween(300, easing = FastOutSlowInEasing),
-                initialOffset = { it / 4 }
-            ) + fadeIn(tween(300))
-        },
-        popExitTransition = {
-            slideOutOfContainer(
-                towards = AnimatedContentTransitionScope.SlideDirection.End,
-                animationSpec = tween(300, easing = FastOutSlowInEasing),
-                targetOffset = { it / 4 }
-            ) + fadeOut(tween(150))
-        }
+        // No screen transitions: every destination (tabs and sub-screens, forward and back)
+        // appears instantly.
+        enterTransition = { EnterTransition.None },
+        exitTransition = { ExitTransition.None },
+        popEnterTransition = { EnterTransition.None },
+        popExitTransition = { ExitTransition.None }
     ) {
         // --- Splash: no enter, fade out ---
         composable<Splash>(
             enterTransition = { EnterTransition.None },
-            exitTransition = { fadeOut(tween(300)) }
+            exitTransition = { ExitTransition.None }
         ) {
             SplashScreen(
                 onNavigateToHome = {
@@ -86,12 +69,7 @@ fun LocalPdfNavHost(
         }
 
         // --- Bottom Nav Tabs: cross-fade only ---
-        composable<Home>(
-            enterTransition = { fadeIn(tween(200)) },
-            exitTransition = { fadeOut(tween(200)) },
-            popEnterTransition = { fadeIn(tween(200)) },
-            popExitTransition = { fadeOut(tween(200)) }
-        ) {
+        composable<Home> {
             HomeScreen(
                 windowSizeClass = windowSizeClass,
                 onOpenPdf = { path ->
@@ -125,12 +103,7 @@ fun LocalPdfNavHost(
             )
         }
 
-        composable<Files>(
-            enterTransition = { fadeIn(tween(200)) },
-            exitTransition = { fadeOut(tween(200)) },
-            popEnterTransition = { fadeIn(tween(200)) },
-            popExitTransition = { fadeOut(tween(200)) }
-        ) {
+        composable<Files> {
             val context = androidx.compose.ui.platform.LocalContext.current
             FilesScreen(
                 windowSizeClass = windowSizeClass,
@@ -171,12 +144,7 @@ fun LocalPdfNavHost(
             )
         }
 
-        composable<Settings>(
-            enterTransition = { fadeIn(tween(200)) },
-            exitTransition = { fadeOut(tween(200)) },
-            popEnterTransition = { fadeIn(tween(200)) },
-            popExitTransition = { fadeOut(tween(200)) }
-        ) {
+        composable<Settings> {
             SettingsScreen(
                 windowSizeClass = windowSizeClass,
                 onNavigateToHome = {
@@ -196,7 +164,7 @@ fun LocalPdfNavHost(
             )
         }
 
-        // --- Sub-screens: use default slide+fade from NavHost ---
+        // --- Sub-screens ---
         composable<Detail> { backStackEntry ->
             val detail: Detail = backStackEntry.toRoute()
             PdfDetailScreen(

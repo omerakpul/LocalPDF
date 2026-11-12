@@ -1,5 +1,19 @@
 package com.omerakpul.localpdf.presentation.feature.viewer.screen
 
+import com.omerakpul.localpdf.presentation.components.AppTopBar
+import androidx.compose.ui.input.pointer.positionChanged
+import androidx.compose.foundation.gestures.calculateZoom
+import androidx.compose.foundation.gestures.calculatePan
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.awaitEachGesture
+import kotlin.math.abs
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CancellationException
 import android.graphics.Bitmap
 import android.graphics.pdf.PdfRenderer
 import android.os.ParcelFileDescriptor
@@ -57,6 +71,9 @@ import com.omerakpul.localpdf.presentation.theme.TextPrimary
 import com.omerakpul.localpdf.presentation.theme.TextSecondary
 import java.io.File
 
+private const val MAX_RENDER_SIDE = 2048f
+private const val CACHE_RADIUS = 2
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PdfViewerScreen(
@@ -68,6 +85,8 @@ fun PdfViewerScreen(
     val pageBitmaps = remember { mutableStateListOf<Bitmap?>() }
     var isLoading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
+    // PdfRenderer allows only one open page at a time, so all rendering goes through this lock
+    val renderLock = remember { Mutex() }
 
     // Open PDF
     DisposableEffect(pdfPath) {
@@ -87,28 +106,19 @@ fun PdfViewerScreen(
         }
 
         onDispose {
-            pdfRenderer?.close()
+            val renderer = pdfRenderer
+            if (renderer != null) {
+                // Wait for a page that may still be rendering before closing the renderer
+                CoroutineScope(Dispatchers.Default).launch {
+                    renderLock.withLock { runCatching { renderer.close() } }
+                }
+            }
         }
     }
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = File(pdfPath).nameWithoutExtension,
-                        color = TextPrimary,
-                        maxLines = 1,
-                        fontSize = 16.sp
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = TextPrimary)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = BackgroundColor)
-            )
+            AppTopBar(title = File(pdfPath).nameWithoutExtension, onBack = onBack)
         }
     ) { paddingValues ->
         Box(
@@ -151,6 +161,7 @@ fun PdfViewerScreen(
                         ) { pageIndex ->
                             PdfPage(
                                 renderer = pdfRenderer,
+                                renderLock = renderLock,
                                 pageIndex = pageIndex,
                                 cachedBitmaps = pageBitmaps
                             )
@@ -186,6 +197,7 @@ fun PdfViewerScreen(
 @Composable
 private fun PdfPage(
     renderer: PdfRenderer?,
+    renderLock: Mutex,
     pageIndex: Int,
     cachedBitmaps: MutableList<Bitmap?>
 ) {
@@ -194,26 +206,39 @@ private fun PdfPage(
     var offsetX by remember { mutableFloatStateOf(0f) }
     var offsetY by remember { mutableFloatStateOf(0f) }
 
-    // Render page on demand
+    // Render page on demand, off the main thread so swiping stays smooth
     LaunchedEffect(pageIndex, renderer) {
         if (bitmap == null && renderer != null) {
             try {
-                val page = renderer.openPage(pageIndex)
-                val renderScale = 2 // 2x for better quality
-                val bmp = Bitmap.createBitmap(
-                    page.width * renderScale,
-                    page.height * renderScale,
-                    Bitmap.Config.ARGB_8888
-                )
-                bmp.eraseColor(android.graphics.Color.WHITE)
-                page.render(bmp, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
-                page.close()
+                val bmp = withContext(Dispatchers.Default) {
+                    renderLock.withLock {
+                        renderer.openPage(pageIndex).use { page ->
+                            // About 2048 px on the long side, never more than 3x the page size
+                            val longest = maxOf(page.width, page.height).toFloat()
+                            val renderScale = (MAX_RENDER_SIDE / longest).coerceIn(0.5f, 3f)
+                            val result = Bitmap.createBitmap(
+                                (page.width * renderScale).toInt().coerceAtLeast(1),
+                                (page.height * renderScale).toInt().coerceAtLeast(1),
+                                Bitmap.Config.ARGB_8888
+                            )
+                            result.eraseColor(android.graphics.Color.WHITE)
+                            page.render(result, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+                            result
+                        }
+                    }
+                }
                 bitmap = bmp
                 if (pageIndex < cachedBitmaps.size) {
                     cachedBitmaps[pageIndex] = bmp
+                    // Keep only the pages around the current one; the rest are re-rendered on demand
+                    for (i in cachedBitmaps.indices) {
+                        if (abs(i - pageIndex) > CACHE_RADIUS) cachedBitmaps[i] = null
+                    }
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                e.printStackTrace()
+                // Renderer closed or page failed to render: keep the spinner instead of crashing
             }
         }
     }
@@ -238,16 +263,31 @@ private fun PdfPage(
                         translationX = offsetX,
                         translationY = offsetY
                     )
+                    // Only take over gestures when pinching or already zoomed in. A single finger at
+                    // normal zoom must reach the pager so swiping turns the page.
                     .pointerInput(Unit) {
-                        detectTransformGestures { _, pan, zoom, _ ->
-                            scale = (scale * zoom).coerceIn(1f, 4f)
-                            if (scale > 1f) {
-                                offsetX += pan.x
-                                offsetY += pan.y
-                            } else {
-                                offsetX = 0f
-                                offsetY = 0f
-                            }
+                        awaitEachGesture {
+                            awaitFirstDown(requireUnconsumed = false)
+                            do {
+                                val event = awaitPointerEvent()
+                                val zoom = event.calculateZoom()
+                                val pan = event.calculatePan()
+                                val multiTouch = event.changes.size > 1
+                                if (multiTouch || scale > 1f) {
+                                    scale = (scale * zoom).coerceIn(1f, 4f)
+                                    if (scale > 1f) {
+                                        // Keep the zoomed page from being dragged out of view
+                                        val maxX = size.width * (scale - 1f) / 2f
+                                        val maxY = size.height * (scale - 1f) / 2f
+                                        offsetX = (offsetX + pan.x).coerceIn(-maxX, maxX)
+                                        offsetY = (offsetY + pan.y).coerceIn(-maxY, maxY)
+                                    } else {
+                                        offsetX = 0f
+                                        offsetY = 0f
+                                    }
+                                    event.changes.forEach { if (it.positionChanged()) it.consume() }
+                                }
+                            } while (event.changes.any { it.pressed })
                         }
                     }
             )

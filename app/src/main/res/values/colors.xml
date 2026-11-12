@@ -7,4 +7,6 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <!-- Keep in sync with BACKGROUND_LIGHT / BACKGROUND_DARK in theme/Color.kt -->
+    <color name="app_background">#FFFAFAF9</color>
 </resources>

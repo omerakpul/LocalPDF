@@ -1,5 +1,13 @@
 package com.omerakpul.localpdf.presentation.feature.merge.screen
 
+import androidx.compose.material.icons.rounded.Add
+import com.omerakpul.localpdf.presentation.components.SecondaryButton
+import com.omerakpul.localpdf.presentation.components.PrimaryButton
+import com.omerakpul.localpdf.presentation.components.FileSummaryCard
+import com.omerakpul.localpdf.presentation.components.EmptyState
+import com.omerakpul.localpdf.presentation.components.AppScreen
+import androidx.compose.material.icons.rounded.PictureAsPdf
+import androidx.compose.foundation.layout.PaddingValues
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -86,26 +94,11 @@ fun MergeScreen(
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.merge_title), color = TextPrimary) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = TextPrimary)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = BackgroundColor)
-            )
-        },
-        snackbarHost = { SnackbarHost(snackbarHostState) }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(BackgroundColor)
-                .padding(paddingValues)
-        ) {
+    AppScreen(
+        title = stringResource(R.string.merge_title),
+        onBack = onBack,
+        snackbarHostState = snackbarHostState
+    ) {
             // Header row
             Row(
                 modifier = Modifier
@@ -134,41 +127,12 @@ fun MergeScreen(
             // Content
             if (uiState.selectedPdfs.isEmpty()) {
                 // Empty state
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Box(
-                            modifier = Modifier
-                                .size(100.dp)
-                                .clip(RoundedCornerShape(50.dp))
-                                .background(CardBackground),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.PictureAsPdf,
-                                contentDescription = null,
-                                modifier = Modifier.size(48.dp),
-                                tint = PrimaryRed.copy(alpha = 0.7f)
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = stringResource(R.string.merge_empty),
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = TextPrimary
-                        )
-                        Text(
-                            text = stringResource(R.string.merge_empty_subtitle),
-                            fontSize = 14.sp,
-                            color = TextSecondary
-                        )
-                    }
-                }
+                EmptyState(
+                    icon = Icons.Rounded.PictureAsPdf,
+                    title = stringResource(R.string.merge_empty),
+                    description = stringResource(R.string.merge_empty_subtitle),
+                    modifier = Modifier.weight(1f)
+                )
             } else {
                 // PDF list
                 LazyColumn(
@@ -176,7 +140,7 @@ fun MergeScreen(
                         .weight(1f)
                         .padding(horizontal = 16.dp)
                 ) {
-                    itemsIndexed(uiState.selectedPdfs) { index, pdfFile ->
+                    itemsIndexed(uiState.selectedPdfs, key = { _, file -> file.id }) { index, pdfFile ->
                         PdfFileItem(
                             pdfFile = pdfFile,
                             index = index,
@@ -205,17 +169,12 @@ fun MergeScreen(
             }
 
             // Add more button
-            OutlinedButton(
+            SecondaryButton(
+                text = stringResource(R.string.merge_add_more),
                 onClick = { pdfPickerLauncher.launch(arrayOf("application/pdf")) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Icon(Icons.Default.Add, contentDescription = null, tint = PrimaryRed)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(stringResource(R.string.merge_add_more), color = PrimaryRed)
-            }
+                icon = Icons.Rounded.Add,
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -244,28 +203,15 @@ fun MergeScreen(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                Button(
+                PrimaryButton(
+                    text = stringResource(R.string.merge_button),
                     onClick = { viewModel.mergePdfs() },
-                    modifier = Modifier.fillMaxWidth(),
+                    icon = Icons.Rounded.PictureAsPdf,
                     enabled = uiState.canMerge,
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryRed)
-                ) {
-                    if (uiState.isLoading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(20.dp),
-                            color = CardBackground,
-                            strokeWidth = 2.dp
-                        )
-                    } else {
-                        Icon(Icons.Default.PictureAsPdf, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(stringResource(R.string.merge_button))
-                    }
-                }
+                    loading = uiState.isLoading
+                )
             }
-        }
-    }
+            }
 }
 
 @Composable
@@ -334,7 +280,7 @@ private fun PdfFileItem(
                 overflow = TextOverflow.Ellipsis
             )
             Text(
-                text = "${formatFileSize(pdfFile.size)} • ${pdfFile.pageCount} pages",
+                text = "${formatFileSize(pdfFile.size)} • ${stringResource(R.string.pages_count, pdfFile.pageCount)}",
                 fontSize = 12.sp,
                 color = TextSecondary
             )

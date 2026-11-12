@@ -1,5 +1,13 @@
 package com.omerakpul.localpdf.presentation.feature.sign.screen
 
+import androidx.compose.material.icons.rounded.Draw
+import com.omerakpul.localpdf.presentation.components.SecondaryButton
+import com.omerakpul.localpdf.presentation.components.PrimaryButton
+import com.omerakpul.localpdf.presentation.components.FileSummaryCard
+import com.omerakpul.localpdf.presentation.components.EmptyState
+import com.omerakpul.localpdf.presentation.components.AppScreen
+import androidx.compose.material.icons.rounded.PictureAsPdf
+import androidx.compose.foundation.layout.PaddingValues
 import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.gestures.detectTransformGestures
@@ -111,76 +119,26 @@ fun SignPdfScreen(
         }
     }
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.sign_pdf), color = TextPrimary) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = TextPrimary)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = BackgroundColor)
-            )
-        }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(BackgroundColor)
-                .padding(paddingValues)
-        ) {
+    AppScreen(
+        title = stringResource(R.string.sign_pdf),
+        onBack = onBack,
+        snackbarHostState = snackbarHostState
+    ) {
             if (uiState.selectedPdf == null) {
                 // Empty state
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Box(
-                            modifier = Modifier
-                                .size(100.dp)
-                                .clip(RoundedCornerShape(50.dp))
-                                .background(CardBackground),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Draw,
-                                contentDescription = null,
-                                modifier = Modifier.size(48.dp),
-                                tint = SignIconColor
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = stringResource(R.string.sign_empty),
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = TextPrimary
-                        )
-                        Text(
-                            text = stringResource(R.string.sign_empty_subtitle),
-                            fontSize = 14.sp,
-                            color = TextSecondary
-                        )
-                    }
-                }
+                EmptyState(
+                    icon = Icons.Rounded.Draw,
+                    title = stringResource(R.string.sign_empty),
+                    description = stringResource(R.string.sign_empty_subtitle),
+                    modifier = Modifier.weight(1f)
+                )
 
-                Button(
+                PrimaryButton(
+                    text = stringResource(R.string.sign_select_pdf),
                     onClick = { pdfPickerLauncher.launch(arrayOf("application/pdf")) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryRed)
-                ) {
-                    Icon(Icons.Default.PictureAsPdf, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(stringResource(R.string.sign_select_pdf))
-                }
+                    icon = Icons.Rounded.PictureAsPdf,
+                    modifier = Modifier.padding(16.dp)
+                )
             } else {
                 // PDF selected - Show signature area
                 Column(
@@ -190,40 +148,12 @@ fun SignPdfScreen(
                         .padding(16.dp)
                 ) {
                     // Selected PDF card
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(CardBackground)
-                            .padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.PictureAsPdf,
-                            contentDescription = null,
-                            tint = PrimaryRed,
-                            modifier = Modifier.size(48.dp)
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = uiState.pdfName,
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = TextPrimary,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                            Text(
-                                text = "${uiState.pageCount} pages",
-                                fontSize = 14.sp,
-                                color = TextSecondary
-                            )
-                        }
-                        IconButton(onClick = { viewModel.clearSelection() }) {
-                            Icon(Icons.Default.Close, contentDescription = "Remove", tint = TextSecondary)
-                        }
-                    }
+                    FileSummaryCard(
+                        name = uiState.pdfName,
+                        detail = stringResource(R.string.pages_count, uiState.pageCount),
+                        icon = Icons.Rounded.PictureAsPdf,
+                        onRemove = { viewModel.clearSelection() }
+                    )
 
                     Spacer(modifier = Modifier.height(16.dp))
 
@@ -334,30 +264,16 @@ fun SignPdfScreen(
                 }
 
                 // Sign button
-                Button(
+                PrimaryButton(
+                    text = stringResource(R.string.sign_button),
                     onClick = { viewModel.signPdf() },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
+                    icon = Icons.Rounded.Draw,
                     enabled = uiState.canSign,
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryRed)
-                ) {
-                    if (uiState.isLoading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(20.dp),
-                            color = CardBackground,
-                            strokeWidth = 2.dp
-                        )
-                    } else {
-                        Icon(Icons.Default.Draw, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(stringResource(R.string.sign_button))
-                    }
-                }
+                    loading = uiState.isLoading,
+                    modifier = Modifier.padding(16.dp)
+                )
             }
-        }
-    }
+            }
 }
 
 

@@ -1,8 +1,22 @@
 package com.omerakpul.localpdf
 
+import io.github.ronjunevaldoz.shadcncompose.tokens.ShadcnStylePreset
+import io.github.ronjunevaldoz.shadcncompose.tokens.ShadcnBaseColor
+import io.github.ronjunevaldoz.shadcncompose.tokens.ShadcnAccent
+import io.github.ronjunevaldoz.shadcncompose.theme.ShadcnTheme
+import com.omerakpul.localpdf.presentation.theme.BackgroundColor
+import com.omerakpul.localpdf.presentation.theme.BACKGROUND_LIGHT
+import com.omerakpul.localpdf.presentation.theme.BACKGROUND_DARK
+import androidx.compose.ui.Modifier
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.background
+import android.graphics.drawable.ColorDrawable
 import android.content.Intent
 import android.content.SharedPreferences
 import android.net.Uri
+import android.util.Log
 import android.provider.OpenableColumns
 import android.widget.Toast
 import androidx.core.content.IntentCompat
@@ -68,11 +82,29 @@ class MainActivity : ComponentActivity() {
             val windowSizeClass = androidx.compose.material3.windowsizeclass.calculateWindowSizeClass(this)
             
             LocalPDFTheme(darkTheme = isDarkTheme) {
-                LocalPdfNavHost(
-                    windowSizeClass = windowSizeClass.widthSizeClass,
-                    incomingPdfPath = incomingPdfPath,
-                    onIncomingPdfHandled = { incomingPdfPath = null }
-                )
+                // The window itself follows the in-app theme, so system UI, the keyboard and screen
+                // transitions never reveal a mismatching (e.g. white) background.
+                LaunchedEffect(isDarkTheme) {
+                    window.setBackgroundDrawable(
+                        ColorDrawable((if (isDarkTheme) BACKGROUND_DARK else BACKGROUND_LIGHT).toInt())
+                    )
+                }
+
+                // Solid layer behind the NavHost: cross-fades blend against the app colour
+                Box(modifier = Modifier.fillMaxSize().background(BackgroundColor)) {
+                    ShadcnTheme(
+                        preset = ShadcnStylePreset.Vega,
+                        baseColor = ShadcnBaseColor.Stone,
+                        accent = ShadcnAccent.Red,
+                        isDark = isDarkTheme
+                    ) {
+                        LocalPdfNavHost(
+                            windowSizeClass = windowSizeClass.widthSizeClass,
+                            incomingPdfPath = incomingPdfPath,
+                            onIncomingPdfHandled = { incomingPdfPath = null }
+                        )
+                    }
+                }
             }
         }
     }
@@ -118,6 +150,7 @@ class MainActivity : ComponentActivity() {
             } ?: return null
             target.absolutePath
         } catch (e: Exception) {
+            Log.w("MainActivity", "Could not copy shared file to cache: $uri", e)
             null
         }
     }

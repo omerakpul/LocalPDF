@@ -1,5 +1,37 @@
+@file:OptIn(ExperimentalFoundationStyleApi::class)
+
 package com.omerakpul.localpdf.presentation.feature.detail.screen
 
+import androidx.compose.foundation.style.ExperimentalFoundationStyleApi
+import io.github.ronjunevaldoz.shadcncompose.styles.ButtonVariant
+import io.github.ronjunevaldoz.shadcncompose.components.ShadcnTextStyle
+import io.github.ronjunevaldoz.shadcncompose.components.ShadcnTextField
+import io.github.ronjunevaldoz.shadcncompose.components.ShadcnText
+import io.github.ronjunevaldoz.shadcncompose.components.ShadcnSeparator
+import io.github.ronjunevaldoz.shadcncompose.components.ShadcnIcon
+import io.github.ronjunevaldoz.shadcncompose.components.ShadcnDialogTitle
+import io.github.ronjunevaldoz.shadcncompose.components.ShadcnDialogHeader
+import io.github.ronjunevaldoz.shadcncompose.components.ShadcnDialogFooter
+import io.github.ronjunevaldoz.shadcncompose.components.ShadcnDialogDescription
+import io.github.ronjunevaldoz.shadcncompose.components.ShadcnButton
+import io.github.ronjunevaldoz.shadcncompose.components.ShadcnAlertDialog
+import com.omerakpul.localpdf.presentation.theme.OutlineColor
+import com.omerakpul.localpdf.presentation.components.SecondaryButton
+import com.omerakpul.localpdf.presentation.components.PrimaryButton
+import com.omerakpul.localpdf.presentation.components.LoadingState
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.graphics.Color
+import androidx.compose.material.icons.rounded.Visibility
+import androidx.compose.material.icons.rounded.Share
+import androidx.compose.material.icons.rounded.Save
+import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.border
+import com.omerakpul.localpdf.presentation.components.AppTopBar
 import android.content.Intent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -104,29 +136,31 @@ fun PdfDetailScreen(
     }
 
     // Delete confirmation dialog
-    if (showDeleteDialog) {
-        AlertDialog(
-            onDismissRequest = { showDeleteDialog = false },
-            title = { Text(stringResource(R.string.detail_delete_title), color = TextPrimary) },
-            text = { Text(stringResource(R.string.detail_delete_message), color = TextSecondary) },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        showDeleteDialog = false
-                        viewModel.deleteFile()
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryRed)
-                ) {
-                    Text(stringResource(R.string.action_delete))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) {
-                    Text(stringResource(R.string.action_cancel), color = TextSecondary)
-                }
-            },
-            containerColor = CardBackground
-        )
+    ShadcnAlertDialog(
+        visible = showDeleteDialog,
+        onDismissRequest = { showDeleteDialog = false }
+    ) {
+        ShadcnDialogHeader {
+            ShadcnDialogTitle(stringResource(R.string.detail_delete_title))
+            ShadcnDialogDescription(stringResource(R.string.detail_delete_message))
+        }
+        ShadcnDialogFooter {
+            ShadcnButton(
+                onClick = { showDeleteDialog = false },
+                variant = ButtonVariant.Outline
+            ) {
+                ShadcnText(stringResource(R.string.action_cancel))
+            }
+            ShadcnButton(
+                onClick = {
+                    showDeleteDialog = false
+                    viewModel.deleteFile()
+                },
+                variant = ButtonVariant.Destructive
+            ) {
+                ShadcnText(stringResource(R.string.action_delete))
+            }
+        }
     }
 
     val isPdf = uiState.filePath.lowercase().endsWith(".pdf")
@@ -134,15 +168,7 @@ fun PdfDetailScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.detail_title, fileLabel), color = TextPrimary) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = TextPrimary)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = BackgroundColor)
-            )
+            AppTopBar(title = stringResource(R.string.detail_title, fileLabel), onBack = onBack)
         }
     ) { paddingValues ->
         Box(
@@ -152,124 +178,95 @@ fun PdfDetailScreen(
                 .padding(paddingValues)
         ) {
             if (uiState.isLoading) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(color = PrimaryRed)
-                }
+                LoadingState()
             } else {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
                         .padding(16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    // Success icon
+                    // Success mark
                     Box(
                         modifier = Modifier
-                            .size(100.dp)
-                            .clip(RoundedCornerShape(50.dp))
-                            .background(PrimaryRed.copy(alpha = 0.1f)),
+                            .size(88.dp)
+                            .clip(CircleShape)
+                            .background(SuccessGreen.copy(alpha = 0.12f)),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.CheckCircle,
-                            contentDescription = null,
-                            modifier = Modifier.size(60.dp),
-                            tint = PrimaryRed
+                        ShadcnIcon(
+                            imageVector = Icons.Rounded.CheckCircle,
+                            tint = SuccessGreen,
+                            modifier = Modifier.size(48.dp),
+                            contentDescription = null
                         )
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    Text(
-                        text = "$fileLabel Created Successfully!",
-                        fontSize = 20.sp,
+                    ShadcnText(
+                        text = stringResource(R.string.detail_created, fileLabel),
+                        style = ShadcnTextStyle.TitleLarge,
                         fontWeight = FontWeight.Bold,
-                        color = TextPrimary
+                        textAlign = TextAlign.Center
                     )
 
-                    Spacer(modifier = Modifier.height(32.dp))
+                    Spacer(modifier = Modifier.height(28.dp))
 
-                    // File name input
-                    OutlinedTextField(
+                    ShadcnTextField(
                         value = uiState.fileName,
                         onValueChange = { viewModel.updateFileName(it) },
-                        label = { Text(stringResource(R.string.detail_file_name)) },
+                        label = stringResource(R.string.detail_file_name),
                         trailingIcon = {
-                            Icon(Icons.Default.Edit, contentDescription = null, tint = TextSecondary)
+                            ShadcnIcon(imageVector = Icons.Rounded.Edit, contentDescription = null, small = true)
                         },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = PrimaryRed,
-                            unfocusedBorderColor = TextSecondary.copy(alpha = 0.5f),
-                            focusedLabelColor = PrimaryRed,
-                            unfocusedLabelColor = TextSecondary,
-                            cursorColor = PrimaryRed,
-                            focusedTextColor = TextPrimary,
-                            unfocusedTextColor = TextPrimary
-                        )
+                        modifier = Modifier.fillMaxWidth()
                     )
 
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(20.dp))
 
-                    // File info card
+                    // File information
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
+                            .clip(RoundedCornerShape(16.dp))
                             .background(CardBackground)
-                            .padding(16.dp)
+                            .border(1.dp, OutlineColor, RoundedCornerShape(16.dp))
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
                     ) {
-                        Text(
-                            text = "File Information",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = TextPrimary
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        InfoRow("Size", formatFileSize(uiState.fileSize))
+                        InfoRow(stringResource(R.string.detail_size), formatFileSize(uiState.fileSize))
+                        ShadcnSeparator()
                         if (isPdf && uiState.isEncrypted) {
                             InfoRow(stringResource(R.string.detail_protected), stringResource(R.string.detail_protected_value))
                         } else if (isPdf) {
-                            InfoRow("Pages", "${uiState.pageCount}")
+                            InfoRow(stringResource(R.string.detail_pages), "${uiState.pageCount}")
                         }
-                        InfoRow("Created", uiState.createdDate)
+                        if (isPdf) ShadcnSeparator()
+                        InfoRow(stringResource(R.string.detail_created_date), uiState.createdDate)
                     }
 
-                    Spacer(modifier = Modifier.weight(1f))
+                    Spacer(modifier = Modifier.height(28.dp))
 
                     if (isPdf && !uiState.isEncrypted) {
-                        OutlinedButton(
+                        SecondaryButton(
+                            text = stringResource(R.string.action_view),
                             onClick = onViewPdf,
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Icon(Icons.Default.Visibility, contentDescription = null, tint = PrimaryRed)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(stringResource(R.string.action_view), color = PrimaryRed)
-                        }
-
-                        Spacer(modifier = Modifier.height(12.dp))
+                            icon = Icons.Rounded.Visibility
+                        )
+                        Spacer(modifier = Modifier.height(10.dp))
                     }
 
-                    Button(
+                    PrimaryButton(
+                        text = stringResource(R.string.detail_save_downloads),
                         onClick = { viewModel.saveToDownloads() },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = SuccessGreen)
-                    ) {
-                        Icon(Icons.Default.Save, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(stringResource(R.string.detail_save_downloads))
-                    }
+                        icon = Icons.Rounded.Save
+                    )
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
 
-                    OutlinedButton(
+                    SecondaryButton(
+                        text = stringResource(R.string.action_share),
                         onClick = {
                             val file = File(uiState.filePath)
                             val contentUri = FileProvider.getUriForFile(
@@ -279,7 +276,7 @@ fun PdfDetailScreen(
                             )
                             val extension = file.extension.lowercase()
                             val mimeType = if (extension == "pdf") "application/pdf" else "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                            
+
                             val intent = Intent(Intent.ACTION_SEND).apply {
                                 type = mimeType
                                 putExtra(Intent.EXTRA_STREAM, contentUri)
@@ -287,24 +284,17 @@ fun PdfDetailScreen(
                             }
                             context.startActivity(Intent.createChooser(intent, context.getString(R.string.detail_share_title, fileLabel)))
                         },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Icon(Icons.Default.Share, contentDescription = null, tint = PrimaryRed)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(stringResource(R.string.action_share), color = PrimaryRed)
-                    }
+                        icon = Icons.Rounded.Share
+                    )
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
 
-                    TextButton(
+                    PrimaryButton(
+                        text = stringResource(R.string.action_delete),
                         onClick = { showDeleteDialog = true },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Icon(Icons.Default.Delete, contentDescription = null, tint = PrimaryRed)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(stringResource(R.string.action_delete), color = PrimaryRed)
-                    }
+                        icon = Icons.Rounded.Delete,
+                        variant = ButtonVariant.Ghost
+                    )
                 }
             }
 
@@ -315,31 +305,26 @@ fun PdfDetailScreen(
                 exit = fadeOut(),
                 modifier = Modifier.align(Alignment.Center)
             ) {
-                Box(
+                Row(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(SuccessGreen.copy(alpha = 0.95f))
-                        .padding(horizontal = 32.dp, vertical = 24.dp),
-                    contentAlignment = Alignment.Center
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(SuccessGreen)
+                        .padding(horizontal = 28.dp, vertical = 20.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.CheckCircle,
-                            contentDescription = null,
-                            tint = CardBackground,
-                            modifier = Modifier.size(28.dp)
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text(
-                            text = "Saved to Downloads!",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = CardBackground
-                        )
-                    }
+                    Icon(
+                        imageVector = Icons.Rounded.CheckCircle,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(28.dp)
+                    )
+                    Text(
+                        text = stringResource(R.string.detail_saved),
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color.White
+                    )
                 }
             }
         }
@@ -351,11 +336,12 @@ private fun InfoRow(label: String, value: String) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        horizontalArrangement = Arrangement.SpaceBetween
+            .padding(vertical = 12.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(text = label, fontSize = 14.sp, color = TextSecondary)
-        Text(text = value, fontSize = 14.sp, color = TextPrimary, fontWeight = FontWeight.Medium)
+        ShadcnText(text = label, muted = true)
+        ShadcnText(text = value, fontWeight = FontWeight.Medium)
     }
 }
 
