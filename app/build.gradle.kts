@@ -1,6 +1,7 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.hilt)
     alias(libs.plugins.kotlin.serialization)
@@ -17,7 +18,7 @@ val appVersionCode: Int = appVersion.split(".")
 
 android {
     namespace = "com.omerakpul.localpdf"
-    compileSdk = 35
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.omerakpul.localpdf"
@@ -43,11 +44,24 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
-    kotlinOptions {
-        jvmTarget = "11"
-    }
     buildFeatures {
         compose = true
+    }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_11)
+    }
+}
+
+// Hilt's annotation processor ships an older kotlin-metadata reader than the Kotlin version used
+// to compile this app. Force the matching reader so it can read the generated metadata.
+configurations.configureEach {
+    resolutionStrategy.eachDependency {
+        if (requested.group == "org.jetbrains.kotlin" && requested.name == "kotlin-metadata-jvm") {
+            useVersion(libs.versions.kotlin.get())
+        }
     }
 }
 
@@ -88,6 +102,9 @@ dependencies {
     // Coroutines
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.serialization.json)
+
+    // UI components
+    implementation(libs.shadcn.compose)
 
     // Image loading
     implementation(libs.coil.compose)
