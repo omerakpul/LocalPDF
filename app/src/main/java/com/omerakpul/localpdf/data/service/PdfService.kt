@@ -43,14 +43,6 @@ class PdfService @Inject constructor(
         PDFBoxResourceLoader.init(context)
     }
 
-    private companion object {
-        // Used only when no system Unicode font is available (Helvetica is WinAnsi-only)
-        val TURKISH_FALLBACK = mapOf(
-            'ğ' to 'g', 'Ğ' to 'G', 'ş' to 's', 'Ş' to 'S',
-            'ı' to 'i', 'İ' to 'I'
-        )
-    }
-
     private fun uriToFile(uri: Uri): File {
         val inputStream = context.contentResolver.openInputStream(uri)
             ?: throw Exception(context.getString(R.string.error_cannot_open_file))
@@ -485,95 +477,9 @@ class PdfService @Inject constructor(
                 throw Exception(context.getString(R.string.error_invalid_docx))
             }
 
-            val unicodeFont = loadUnicodeFont(document)
-            val font: PDFont = unicodeFont ?: PDType1Font.HELVETICA
-            val renderable = HashMap<Char, Boolean>()
-            val fontSize = 12f
-            val leading = 15f
-            val margin = 50f
-            val maxWidth = PDRectangle.A4.width - 2 * margin
-
-            fun sanitize(raw: String): String {
-                val sb = StringBuilder()
-                for (c in raw) {
-                    val ch = when {
-                        c == '\t' -> ' '
-                        unicodeFont == null -> TURKISH_FALLBACK[c] ?: c
-                        else -> c
-                    }
-                    val ok = renderable.getOrPut(ch) {
-                        try { font.getStringWidth(ch.toString()); true } catch (e: Exception) { false }
-                    }
-                    sb.append(if (ok) ch else '?')
-                }
-                return sb.toString()
+            wordDocument.use {
+                WordToPdfRenderer(document, loadFonts(document)).render(it)
             }
-
-            fun textWidth(text: String) = font.getStringWidth(text) / 1000f * fontSize
-
-            // Break a paragraph into lines that fit the page width
-            fun wrap(text: String): List<String> {
-                val lines = mutableListOf<String>()
-                var current = StringBuilder()
-                for (word in text.split(' ')) {
-                    var w = word
-                    val candidate = if (current.isEmpty()) w else "$current $w"
-                    if (textWidth(candidate) <= maxWidth) {
-                        current = StringBuilder(candidate)
-                        continue
-                    }
-                    if (current.isNotEmpty()) {
-                        lines.add(current.toString())
-                        current = StringBuilder()
-                    }
-                    // Word longer than a full line: split by characters
-                    while (textWidth(w) > maxWidth && w.length > 1) {
-                        var cut = w.length - 1
-                        while (cut > 1 && textWidth(w.substring(0, cut)) > maxWidth) cut--
-                        lines.add(w.substring(0, cut))
-                        w = w.substring(cut)
-                    }
-                    current.append(w)
-                }
-                lines.add(current.toString())
-                return lines
-            }
-
-            var page = PDPage(PDRectangle.A4)
-            document.addPage(page)
-            var contentStream = PDPageContentStream(document, page)
-            var y = page.mediaBox.height - margin
-
-            fun drawLine(line: String) {
-                if (y < margin) {
-                    contentStream.close()
-                    page = PDPage(PDRectangle.A4)
-                    document.addPage(page)
-                    contentStream = PDPageContentStream(document, page)
-                    y = page.mediaBox.height - margin
-                }
-                if (line.isNotEmpty()) {
-                    contentStream.beginText()
-                    contentStream.setFont(font, fontSize)
-                    contentStream.newLineAtOffset(margin, y)
-                    contentStream.showText(line)
-                    contentStream.endText()
-                }
-                y -= leading
-            }
-
-            wordDocument.paragraphs.forEach { paragraph ->
-                val text = paragraph.text
-                if (text.isBlank()) {
-                    drawLine("") // keep paragraph spacing
-                } else {
-                    text.split('\n', '\r', '\u000B').forEach { part ->
-                        wrap(sanitize(part)).forEach { drawLine(it) }
-                    }
-                }
-            }
-            contentStream.close()
-            wordDocument.close()
 
             val outputFile = File(
                 context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS),
@@ -588,23 +494,37 @@ class PdfService @Inject constructor(
         }
     }
 
-    /** Tries common system fonts that cover Turkish/Latin-extended glyphs. */
-    private fun loadUnicodeFont(document: PDDocument): PDFont? {
-        val candidates = listOf(
-            "/system/fonts/Roboto-Regular.ttf",
-            "/system/fonts/NotoSans-Regular.ttf",
-            "/system/fonts/DroidSans.ttf"
-        )
-        for (path in candidates) {
-            val file = File(path)
-            if (!file.exists()) continue
-            try {
-                return PDType0Font.load(document, file)
-            } catch (e: Exception) {
-                // try next candidate
+    /**
+     * Loads Unicode system fonts (regular/bold/italic/bold-italic) so Turkish characters and
+     * text styles work. Falls back to the standard Helvetica family when none is available.
+     */
+    private fun loadFonts(document: PDDocument): WordToPdfRenderer.Fonts {
+        fun load(vararg names: String): PDFont? {
+            for (name in names) {
+                val file = File("/system/fonts/$name")
+                if (!file.exists()) continue
+                try {
+                    return PDType0Font.load(document, file)
+                } catch (e: Exception) {
+                    // try the next candidate
+                }
             }
+            return null
         }
-        return null
+
+        val regular = load("Roboto-Regular.ttf", "NotoSans-Regular.ttf", "DroidSans.ttf")
+            ?: return WordToPdfRenderer.Fonts(
+                PDType1Font.HELVETICA,
+                PDType1Font.HELVETICA_BOLD,
+                PDType1Font.HELVETICA_OBLIQUE,
+                PDType1Font.HELVETICA_BOLD_OBLIQUE,
+                isUnicode = false
+            )
+
+        val bold = load("Roboto-Bold.ttf", "NotoSans-Bold.ttf", "DroidSans-Bold.ttf") ?: regular
+        val italic = load("Roboto-Italic.ttf", "NotoSans-Italic.ttf") ?: regular
+        val boldItalic = load("Roboto-BoldItalic.ttf", "NotoSans-BoldItalic.ttf") ?: bold
+        return WordToPdfRenderer.Fonts(regular, bold, italic, boldItalic, isUnicode = true)
     }
 
     suspend fun convertPdfToWord(pdfUri: Uri): File = withContext(Dispatchers.IO) {
