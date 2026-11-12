@@ -70,12 +70,20 @@ import com.omerakpul.localpdf.presentation.theme.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MergeScreen(
+    initialUris: List<String> = emptyList(),
     onBack: () -> Unit,
     onNavigateToDetail: (String) -> Unit,
     viewModel: MergePdfViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+
+    // PDFs handed over from another app's share sheet
+    LaunchedEffect(Unit) {
+        if (initialUris.isNotEmpty()) {
+            viewModel.addPdfs(initialUris.map { Uri.parse(it) })
+        }
+    }
 
     val pdfPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenMultipleDocuments()
