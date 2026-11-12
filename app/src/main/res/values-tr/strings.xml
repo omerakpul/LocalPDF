@@ -237,4 +237,12 @@
     <string name="convert_images_saved">%1$d görsel Pictures/LocalPDF klasörüne kaydedildi</string>
     <string name="recent_files">Son Dosyalar</string>
     <string name="home_tagline">Her şey cihazınızda kalır</string>
+    <string name="files_count">%1$d dosya</string>
+    <string name="pages_count">%1$d sayfa</string>
+    <string name="settings_licenses_desc">Açık kaynak kütüphaneler</string>
+    <string name="detail_created">%1$s başarıyla oluşturuldu!</string>
+    <string name="detail_size">Boyut</string>
+    <string name="detail_pages">Sayfa</string>
+    <string name="detail_created_date">Oluşturulma</string>
+    <string name="detail_saved">İndirilenlere kaydedildi!</string>
 </resources>

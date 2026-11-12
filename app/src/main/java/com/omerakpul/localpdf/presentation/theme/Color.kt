@@ -22,25 +22,25 @@ private fun themed(light: Long, dark: Long): Color = Color(if (_isDark.value) da
 // ---------------------------------------------------------------------------
 // Brand
 // ---------------------------------------------------------------------------
-internal val LightPrimary = Color(0xFFD32F2F)
-internal val DarkPrimary = Color(0xFFE53935)
+internal val LightPrimary = Color(0xFFDC2626)
+internal val DarkPrimary = Color(0xFFEF4444)
 
 /** Brand crimson. Slightly deeper in light mode, slightly brighter in dark mode. */
 val PrimaryRed: Color get() = if (_isDark.value) DarkPrimary else LightPrimary
 val SuccessGreen = Color(0xFF2E9E5B)
 
 // ---------------------------------------------------------------------------
-// Surfaces and text (warm neutrals instead of cold greys)
+// Surfaces and text (warm "stone" neutrals, shared with the component library theme)
 // ---------------------------------------------------------------------------
 /** App background in ARGB; also used for the window so transitions never flash a different colour. */
-const val BACKGROUND_LIGHT = 0xFFFAF7F5L
-const val BACKGROUND_DARK = 0xFF131010L
+const val BACKGROUND_LIGHT = 0xFFFAFAF9L
+const val BACKGROUND_DARK = 0xFF0C0A09L
 
 val BackgroundColor: Color get() = themed(BACKGROUND_LIGHT, BACKGROUND_DARK)
-val CardBackground: Color get() = themed(0xFFFFFFFF, 0xFF1E1A19)
-val OutlineColor: Color get() = themed(0xFFEBE3DF, 0xFF332D2B)
-val TextPrimary: Color get() = themed(0xFF211A19, 0xFFF3EDEB)
-val TextSecondary: Color get() = themed(0xFF6E6461, 0xFFB4A8A4)
+val CardBackground: Color get() = themed(0xFFFFFFFF, 0xFF1C1917)
+val OutlineColor: Color get() = themed(0xFFE7E5E4, 0xFF292524)
+val TextPrimary: Color get() = themed(0xFF0C0A09, 0xFFFAFAF9)
+val TextSecondary: Color get() = themed(0xFF78716C, 0xFFA8A29E)
 
 // ---------------------------------------------------------------------------
 // Tool accents: a tinted tile (Color) with a stronger icon colour (IconColor).

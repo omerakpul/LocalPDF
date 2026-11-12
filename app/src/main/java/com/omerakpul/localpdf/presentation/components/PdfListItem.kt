@@ -1,23 +1,19 @@
+@file:OptIn(ExperimentalFoundationStyleApi::class)
+
 package com.omerakpul.localpdf.presentation.components
 
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.style.ExperimentalFoundationStyleApi
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Description
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.PictureAsPdf
+import androidx.compose.material.icons.rounded.Description
+import androidx.compose.material.icons.rounded.MoreVert
+import androidx.compose.material.icons.rounded.PictureAsPdf
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -28,16 +24,25 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.omerakpul.localpdf.R
 import com.omerakpul.localpdf.domain.model.Pdf
-import com.omerakpul.localpdf.presentation.theme.*
+import com.omerakpul.localpdf.presentation.theme.ConvertColor
+import com.omerakpul.localpdf.presentation.theme.ConvertIconColor
+import com.omerakpul.localpdf.presentation.theme.SplitColor
+import com.omerakpul.localpdf.presentation.theme.SplitIconColor
+import io.github.ronjunevaldoz.shadcncompose.components.ShadcnButton
+import io.github.ronjunevaldoz.shadcncompose.components.ShadcnIcon
+import io.github.ronjunevaldoz.shadcncompose.components.ShadcnItem
+import io.github.ronjunevaldoz.shadcncompose.components.ShadcnItemActions
+import io.github.ronjunevaldoz.shadcncompose.components.ShadcnItemContent
+import io.github.ronjunevaldoz.shadcncompose.components.ShadcnItemDescription
+import io.github.ronjunevaldoz.shadcncompose.components.ShadcnItemTitle
+import io.github.ronjunevaldoz.shadcncompose.components.ShadcnItemVariant
+import io.github.ronjunevaldoz.shadcncompose.styles.ButtonSize
+import io.github.ronjunevaldoz.shadcncompose.styles.ButtonVariant
 
-// List item component for displaying a PDF file
-@OptIn(ExperimentalFoundationApi::class)
+/** Row for a stored PDF/Word file with a colour-coded type icon and an overflow menu. */
 @Composable
 fun PdfListItem(
     pdf: Pdf,
@@ -51,95 +56,65 @@ fun PdfListItem(
     var menuExpanded by remember { mutableStateOf(false) }
 
     val isPdf = pdf.name.lowercase().endsWith(".pdf")
-    val icon = if (isPdf) Icons.Default.PictureAsPdf else Icons.Default.Description
+    val icon = if (isPdf) Icons.Rounded.PictureAsPdf else Icons.Rounded.Description
     val iconColor = if (isPdf) SplitIconColor else ConvertIconColor
-    val backgroundColor = if (isPdf) SplitColor else ConvertColor
+    val tileColor = if (isPdf) SplitColor else ConvertColor
 
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .background(CardBackground)
-            .combinedClickable(
-                onClick = onClick,
-                onLongClick = onLongClick
-            )
-            .padding(12.dp),
-        verticalAlignment = Alignment.CenterVertically
+    ShadcnItem(
+        modifier = modifier.fillMaxWidth(),
+        variant = ShadcnItemVariant.Outline,
+        onClick = onClick
     ) {
-        // File Icon
+        // Own icon tile so the type colour (red for PDF, blue for Word) is easy to scan
         Box(
             modifier = Modifier
-                .size(48.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .background(backgroundColor),
+                .size(44.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(tileColor),
             contentAlignment = Alignment.Center
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = iconColor,
-                modifier = Modifier.size(28.dp)
-            )
+            ShadcnIcon(imageVector = icon, tint = iconColor, contentDescription = null)
         }
-
-        // File info
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .padding(horizontal = 12.dp)
-        ) {
-            Text(
-                text = pdf.name,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
-                color = TextPrimary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            Text(
-                text = formatFileSize(pdf.fileSize) + " • " + formatDate(pdf.createdAt),
-                fontSize = 12.sp,
-                color = TextSecondary,
-                modifier = Modifier.padding(top = 2.dp)
-            )
+        ShadcnItemContent {
+            ShadcnItemTitle(text = pdf.name)
+            ShadcnItemDescription(text = formatFileSize(pdf.fileSize) + " • " + formatDate(pdf.createdAt))
         }
+        ShadcnItemActions {
+            Box {
+                ShadcnButton(
+                    onClick = { menuExpanded = true },
+                    variant = ButtonVariant.Ghost,
+                    size = ButtonSize.Icon
+                ) {
+                    ShadcnIcon(imageVector = Icons.Rounded.MoreVert, contentDescription = null)
+                }
 
-        // More options button
-        Box {
-            IconButton(onClick = { menuExpanded = true }) {
-                Icon(
-                    imageVector = Icons.Default.MoreVert,
-                    contentDescription = "Options",
-                    tint = TextSecondary
-                )
-            }
-
-            DropdownMenu(
-                expanded = menuExpanded,
-                onDismissRequest = { menuExpanded = false }
-            ) {
-                DropdownMenuItem(
-                    text = { Text(stringResource(R.string.action_share)) },
-                    onClick = {
-                        menuExpanded = false
-                        onShare()
-                    }
-                )
-                DropdownMenuItem(
-                    text = { Text(stringResource(R.string.action_rename)) },
-                    onClick = {
-                        menuExpanded = false
-                        onRename()
-                    }
-                )
-                DropdownMenuItem(
-                    text = { Text(stringResource(R.string.action_delete)) },
-                    onClick = {
-                        menuExpanded = false
-                        onDelete()
-                    }
-                )
+                DropdownMenu(
+                    expanded = menuExpanded,
+                    onDismissRequest = { menuExpanded = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.action_share)) },
+                        onClick = {
+                            menuExpanded = false
+                            onShare()
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.action_rename)) },
+                        onClick = {
+                            menuExpanded = false
+                            onRename()
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.action_delete)) },
+                        onClick = {
+                            menuExpanded = false
+                            onDelete()
+                        }
+                    )
+                }
             }
         }
     }

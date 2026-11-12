@@ -1,5 +1,6 @@
 package com.omerakpul.localpdf.presentation.feature.viewer.screen
 
+import com.omerakpul.localpdf.presentation.components.AppTopBar
 import androidx.compose.ui.input.pointer.positionChanged
 import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.gestures.calculatePan
@@ -117,22 +118,7 @@ fun PdfViewerScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = File(pdfPath).nameWithoutExtension,
-                        color = TextPrimary,
-                        maxLines = 1,
-                        fontSize = 16.sp
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = TextPrimary)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = BackgroundColor)
-            )
+            AppTopBar(title = File(pdfPath).nameWithoutExtension, onBack = onBack)
         }
     ) { paddingValues ->
         Box(

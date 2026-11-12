@@ -1,5 +1,19 @@
+@file:OptIn(ExperimentalFoundationStyleApi::class)
+
 package com.omerakpul.localpdf.presentation.feature.convert.screen
 
+import androidx.compose.foundation.style.ExperimentalFoundationStyleApi
+import io.github.ronjunevaldoz.shadcncompose.components.ShadcnIcon
+import io.github.ronjunevaldoz.shadcncompose.components.ShadcnChip
+import androidx.compose.material.icons.rounded.SwapHoriz
+import androidx.compose.material.icons.rounded.Description
+import com.omerakpul.localpdf.presentation.components.SecondaryButton
+import com.omerakpul.localpdf.presentation.components.PrimaryButton
+import com.omerakpul.localpdf.presentation.components.FileSummaryCard
+import com.omerakpul.localpdf.presentation.components.EmptyState
+import com.omerakpul.localpdf.presentation.components.AppScreen
+import androidx.compose.material.icons.rounded.PictureAsPdf
+import androidx.compose.foundation.layout.PaddingValues
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -99,27 +113,12 @@ fun ConvertScreen(
         }
     }
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.convert_pdf), color = TextPrimary) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = TextPrimary)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = BackgroundColor)
-            )
-        }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(BackgroundColor)
-                .padding(paddingValues)
-                .padding(16.dp)
-        ) {
+    AppScreen(
+        title = stringResource(R.string.convert_pdf),
+        onBack = onBack,
+        snackbarHostState = snackbarHostState,
+        contentPadding = PaddingValues(16.dp)
+    ) {
             // Mode Selection
             Text(
                 text = stringResource(R.string.convert_mode),
@@ -132,34 +131,23 @@ fun ConvertScreen(
 
             FlowRow(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                FilterChip(
+                ShadcnChip(
+                    label = stringResource(R.string.convert_word_to_pdf),
                     selected = uiState.conversionMode == ConversionMode.WORD_TO_PDF,
-                    onClick = { viewModel.setConversionMode(ConversionMode.WORD_TO_PDF) },
-                    label = { Text(stringResource(R.string.convert_word_to_pdf)) },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = PrimaryRed,
-                        selectedLabelColor = CardBackground
-                    )
+                    onClick = { viewModel.setConversionMode(ConversionMode.WORD_TO_PDF) }
                 )
-                FilterChip(
+                ShadcnChip(
+                    label = stringResource(R.string.convert_pdf_to_word),
                     selected = uiState.conversionMode == ConversionMode.PDF_TO_WORD,
-                    onClick = { viewModel.setConversionMode(ConversionMode.PDF_TO_WORD) },
-                    label = { Text(stringResource(R.string.convert_pdf_to_word)) },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = PrimaryRed,
-                        selectedLabelColor = CardBackground
-                    )
+                    onClick = { viewModel.setConversionMode(ConversionMode.PDF_TO_WORD) }
                 )
-                FilterChip(
+                ShadcnChip(
+                    label = stringResource(R.string.convert_pdf_to_images),
                     selected = uiState.conversionMode == ConversionMode.PDF_TO_IMAGES,
-                    onClick = { viewModel.setConversionMode(ConversionMode.PDF_TO_IMAGES) },
-                    label = { Text(stringResource(R.string.convert_pdf_to_images)) },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = PrimaryRed,
-                        selectedLabelColor = CardBackground
-                    )
+                    onClick = { viewModel.setConversionMode(ConversionMode.PDF_TO_IMAGES) }
                 )
             }
 
@@ -167,47 +155,15 @@ fun ConvertScreen(
 
             if (uiState.selectedFileUri == null) {
                 // Empty state
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Box(
-                            modifier = Modifier
-                                .size(100.dp)
-                                .clip(RoundedCornerShape(50.dp))
-                                .background(CardBackground),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.SwapHoriz,
-                                contentDescription = null,
-                                modifier = Modifier.size(48.dp),
-                                tint = ConvertIconColor
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = stringResource(R.string.convert_empty),
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = TextPrimary
-                        )
-                        Text(
-                            text = when (uiState.conversionMode) {
-                                ConversionMode.WORD_TO_PDF -> stringResource(R.string.convert_empty_word_subtitle)
-                                ConversionMode.PDF_TO_WORD -> stringResource(R.string.convert_empty_pdf_subtitle)
-                                ConversionMode.PDF_TO_IMAGES -> stringResource(R.string.convert_empty_images_subtitle)
-                            },
-                            fontSize = 14.sp,
-                            color = TextSecondary
-                        )
-                    }
-                }
+                EmptyState(
+                    icon = Icons.Rounded.SwapHoriz,
+                    title = stringResource(R.string.convert_empty),
+                    description = stringResource(R.string.convert_empty_word_subtitle),
+                    modifier = Modifier.weight(1f)
+                )
 
-                Button(
+                PrimaryButton(
+                    text = stringResource(R.string.convert_select_file),
                     onClick = {
                         val mimeType = if (uiState.conversionMode == ConversionMode.WORD_TO_PDF)
                             arrayOf("application/vnd.openxmlformats-officedocument.wordprocessingml.document")
@@ -215,18 +171,8 @@ fun ConvertScreen(
                             arrayOf("application/pdf")
                         filePickerLauncher.launch(mimeType)
                     },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryRed)
-                ) {
-                    Icon(
-                        if (uiState.conversionMode == ConversionMode.WORD_TO_PDF)
-                            Icons.Default.Description else Icons.Default.PictureAsPdf,
-                        contentDescription = null
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(stringResource(R.string.convert_select_file))
-                }
+                    icon = Icons.Rounded.Description
+                )
             } else {
                 // File selected
                 Row(
@@ -306,28 +252,15 @@ fun ConvertScreen(
 
 
 
-                Button(
+                PrimaryButton(
+                    text = stringResource(R.string.convert_button),
                     onClick = { viewModel.convert() },
-                    modifier = Modifier.fillMaxWidth(),
+                    icon = Icons.Rounded.SwapHoriz,
                     enabled = uiState.canConvert,
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryRed)
-                ) {
-                    if (uiState.isLoading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(20.dp),
-                            color = CardBackground,
-                            strokeWidth = 2.dp
-                        )
-                    } else {
-                        Icon(Icons.Default.SwapHoriz, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(stringResource(R.string.convert_button))
-                    }
-                }
+                    loading = uiState.isLoading
+                )
             }
-        }
-    }
+            }
 }
 
 private fun formatFileSize(size: Long): String {

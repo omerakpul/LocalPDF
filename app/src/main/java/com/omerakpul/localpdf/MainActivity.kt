@@ -1,5 +1,9 @@
 package com.omerakpul.localpdf
 
+import io.github.ronjunevaldoz.shadcncompose.tokens.ShadcnStylePreset
+import io.github.ronjunevaldoz.shadcncompose.tokens.ShadcnBaseColor
+import io.github.ronjunevaldoz.shadcncompose.tokens.ShadcnAccent
+import io.github.ronjunevaldoz.shadcncompose.theme.ShadcnTheme
 import com.omerakpul.localpdf.presentation.theme.BackgroundColor
 import com.omerakpul.localpdf.presentation.theme.BACKGROUND_LIGHT
 import com.omerakpul.localpdf.presentation.theme.BACKGROUND_DARK
@@ -88,11 +92,18 @@ class MainActivity : ComponentActivity() {
 
                 // Solid layer behind the NavHost: cross-fades blend against the app colour
                 Box(modifier = Modifier.fillMaxSize().background(BackgroundColor)) {
-                    LocalPdfNavHost(
-                        windowSizeClass = windowSizeClass.widthSizeClass,
-                        incomingPdfPath = incomingPdfPath,
-                        onIncomingPdfHandled = { incomingPdfPath = null }
-                    )
+                    ShadcnTheme(
+                        preset = ShadcnStylePreset.Vega,
+                        baseColor = ShadcnBaseColor.Stone,
+                        accent = ShadcnAccent.Red,
+                        isDark = isDarkTheme
+                    ) {
+                        LocalPdfNavHost(
+                            windowSizeClass = windowSizeClass.widthSizeClass,
+                            incomingPdfPath = incomingPdfPath,
+                            onIncomingPdfHandled = { incomingPdfPath = null }
+                        )
+                    }
                 }
             }
         }

@@ -1,5 +1,13 @@
 package com.omerakpul.localpdf.presentation.feature.phototopdf.screen
 
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.CameraAlt
+import com.omerakpul.localpdf.presentation.components.SecondaryButton
+import com.omerakpul.localpdf.presentation.components.PrimaryButton
+import com.omerakpul.localpdf.presentation.components.FileSummaryCard
+import com.omerakpul.localpdf.presentation.components.EmptyState
+import com.omerakpul.localpdf.presentation.components.AppScreen
+import androidx.compose.material.icons.rounded.PictureAsPdf
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -101,26 +109,11 @@ fun PhotoToPdfScreen(
         }
     }
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.photo_to_pdf), color = TextPrimary) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = TextPrimary)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = BackgroundColor)
-            )
-        }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(BackgroundColor)
-                .padding(paddingValues)
-        ) {
+    AppScreen(
+        title = stringResource(R.string.photo_to_pdf),
+        onBack = onBack,
+        snackbarHostState = snackbarHostState
+    ) {
             // Header
             Row(
                 modifier = Modifier
@@ -148,42 +141,12 @@ fun PhotoToPdfScreen(
 
             if (uiState.selectedPhotos.isEmpty()) {
                 // Empty state
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Box(
-                            modifier = Modifier
-                                .size(100.dp)
-                                .clip(RoundedCornerShape(50.dp))
-                                .background(CardBackground),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.CameraAlt,
-                                contentDescription = null,
-                                modifier = Modifier.size(48.dp),
-                                tint = PrimaryRed.copy(alpha = 0.7f)
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = stringResource(R.string.photo_empty),
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = TextPrimary
-                        )
-                        Text(
-                            text = stringResource(R.string.photo_empty_subtitle),
-                            fontSize = 14.sp,
-                            color = TextSecondary,
-                            textAlign = TextAlign.Center
-                        )
-                    }
-                }
+                EmptyState(
+                    icon = Icons.Rounded.CameraAlt,
+                    title = stringResource(R.string.photo_empty),
+                    description = stringResource(R.string.photo_empty_subtitle),
+                    modifier = Modifier.weight(1f)
+                )
             } else {
                 // Photo Grid
                 LazyVerticalGrid(
@@ -204,46 +167,27 @@ fun PhotoToPdfScreen(
             }
 
             // Add more button
-            OutlinedButton(
+            SecondaryButton(
+                text = stringResource(R.string.photo_add_more),
                 onClick = { photoPickerLauncher.launch(arrayOf("image/*")) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Icon(Icons.Default.Add, contentDescription = null, tint = PrimaryRed)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(stringResource(R.string.photo_add_more), color = PrimaryRed)
-            }
+                icon = Icons.Rounded.Add,
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
 
             Spacer(modifier = Modifier.height(8.dp))
 
             // Create PDF Button
-            Button(
+            PrimaryButton(
+                text = stringResource(R.string.photo_create_pdf),
                 onClick = { viewModel.createPdf() },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                icon = Icons.Rounded.PictureAsPdf,
                 enabled = uiState.canCreate,
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = PrimaryRed)
-            ) {
-                if (uiState.isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
-                        color = CardBackground,
-                        strokeWidth = 2.dp
-                    )
-                } else {
-                    Icon(Icons.Default.PictureAsPdf, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(stringResource(R.string.photo_create_pdf))
-                }
-            }
+                loading = uiState.isLoading,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            )
 
             Spacer(modifier = Modifier.height(8.dp))
-        }
-    }
+            }
 }
 
 @Composable

@@ -1,5 +1,24 @@
+@file:OptIn(ExperimentalFoundationStyleApi::class)
+
 package com.omerakpul.localpdf.presentation.feature.edit.screen
 
+import androidx.compose.material.icons.rounded.SwapVert
+import androidx.compose.material.icons.rounded.ContentCopy
+import androidx.compose.material.icons.rounded.LockOpen
+import androidx.compose.material.icons.rounded.Lock
+import androidx.compose.material.icons.rounded.RotateRight
+import androidx.compose.foundation.style.ExperimentalFoundationStyleApi
+import io.github.ronjunevaldoz.shadcncompose.components.ShadcnIcon
+import io.github.ronjunevaldoz.shadcncompose.components.ShadcnChip
+import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.material.icons.rounded.Delete
+import com.omerakpul.localpdf.presentation.components.SecondaryButton
+import com.omerakpul.localpdf.presentation.components.PrimaryButton
+import com.omerakpul.localpdf.presentation.components.FileSummaryCard
+import com.omerakpul.localpdf.presentation.components.EmptyState
+import com.omerakpul.localpdf.presentation.components.AppScreen
+import androidx.compose.material.icons.rounded.PictureAsPdf
+import androidx.compose.foundation.layout.PaddingValues
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -106,76 +125,26 @@ fun EditPdfScreen(
         }
     }
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.edit_pdf), color = TextPrimary) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = TextPrimary)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = BackgroundColor)
-            )
-        }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(BackgroundColor)
-                .padding(paddingValues)
-        ) {
+    AppScreen(
+        title = stringResource(R.string.edit_pdf),
+        onBack = onBack,
+        snackbarHostState = snackbarHostState
+    ) {
             if (uiState.selectedPdf == null) {
                 // Empty state
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Box(
-                            modifier = Modifier
-                                .size(100.dp)
-                                .clip(RoundedCornerShape(50.dp))
-                                .background(CardBackground),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Edit,
-                                contentDescription = null,
-                                modifier = Modifier.size(48.dp),
-                                tint = MergeIconColor
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = stringResource(R.string.edit_empty),
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = TextPrimary
-                        )
-                        Text(
-                            text = stringResource(R.string.edit_empty_subtitle),
-                            fontSize = 14.sp,
-                            color = TextSecondary
-                        )
-                    }
-                }
+                EmptyState(
+                    icon = Icons.Rounded.Edit,
+                    title = stringResource(R.string.edit_empty),
+                    description = stringResource(R.string.edit_empty_subtitle),
+                    modifier = Modifier.weight(1f)
+                )
 
-                Button(
+                PrimaryButton(
+                    text = stringResource(R.string.edit_select_pdf),
                     onClick = { pdfPickerLauncher.launch(arrayOf("application/pdf")) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryRed)
-                ) {
-                    Icon(Icons.Default.PictureAsPdf, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(stringResource(R.string.edit_select_pdf))
-                }
+                    icon = Icons.Rounded.PictureAsPdf,
+                    modifier = Modifier.padding(16.dp)
+                )
             } else {
                 Column(
                     modifier = Modifier
@@ -184,40 +153,12 @@ fun EditPdfScreen(
                         .padding(16.dp)
                 ) {
                     // Selected PDF card
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(CardBackground)
-                            .padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.PictureAsPdf,
-                            contentDescription = null,
-                            tint = PrimaryRed,
-                            modifier = Modifier.size(48.dp)
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = uiState.pdfName,
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = TextPrimary,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                            Text(
-                                text = "${uiState.pageCount} pages",
-                                fontSize = 14.sp,
-                                color = TextSecondary
-                            )
-                        }
-                        IconButton(onClick = { viewModel.clearSelection() }) {
-                            Icon(Icons.Default.Close, contentDescription = "Remove", tint = TextSecondary)
-                        }
-                    }
+                    FileSummaryCard(
+                        name = uiState.pdfName,
+                        detail = stringResource(R.string.pages_count, uiState.pageCount),
+                        icon = Icons.Rounded.PictureAsPdf,
+                        onRemove = { viewModel.clearSelection() }
+                    )
 
                     Spacer(modifier = Modifier.height(16.dp))
 
@@ -233,85 +174,44 @@ fun EditPdfScreen(
 
                     FlowRow(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        FilterChip(
+                        ShadcnChip(
+                            label = stringResource(R.string.edit_delete_pages),
                             selected = uiState.editAction == EditAction.DELETE_PAGES,
                             onClick = { viewModel.setEditAction(EditAction.DELETE_PAGES) },
-                            label = { Text(stringResource(R.string.edit_delete_pages)) },
-                            leadingIcon = {
-                                Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(16.dp))
-                            },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = PrimaryRed,
-                                selectedLabelColor = CardBackground,
-                                selectedLeadingIconColor = CardBackground
-                            )
+                            leadingIcon = { mod -> ShadcnIcon(imageVector = Icons.Rounded.Delete, modifier = mod, small = true, contentDescription = null) }
                         )
-                        FilterChip(
+                        ShadcnChip(
+                            label = stringResource(R.string.edit_rotate_pages),
                             selected = uiState.editAction == EditAction.ROTATE_PAGES,
                             onClick = { viewModel.setEditAction(EditAction.ROTATE_PAGES) },
-                            label = { Text(stringResource(R.string.edit_rotate_pages)) },
-                            leadingIcon = {
-                                Icon(Icons.Default.RotateRight, contentDescription = null, modifier = Modifier.size(16.dp))
-                            },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = PrimaryRed,
-                                selectedLabelColor = CardBackground,
-                                selectedLeadingIconColor = CardBackground
-                            )
+                            leadingIcon = { mod -> ShadcnIcon(imageVector = Icons.Rounded.RotateRight, modifier = mod, small = true, contentDescription = null) }
                         )
-                        FilterChip(
+                        ShadcnChip(
+                            label = stringResource(R.string.edit_reorder_pages),
                             selected = uiState.editAction == EditAction.REORDER_PAGES,
                             onClick = { viewModel.setEditAction(EditAction.REORDER_PAGES) },
-                            label = { Text(stringResource(R.string.edit_reorder_pages)) },
-                            leadingIcon = {
-                                Icon(Icons.Default.SwapVert, contentDescription = null, modifier = Modifier.size(16.dp))
-                            },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = PrimaryRed,
-                                selectedLabelColor = CardBackground,
-                                selectedLeadingIconColor = CardBackground
-                            )
+                            leadingIcon = { mod -> ShadcnIcon(imageVector = Icons.Rounded.SwapVert, modifier = mod, small = true, contentDescription = null) }
                         )
-                        FilterChip(
+                        ShadcnChip(
+                            label = stringResource(R.string.edit_duplicate_pages),
                             selected = uiState.editAction == EditAction.DUPLICATE_PAGES,
                             onClick = { viewModel.setEditAction(EditAction.DUPLICATE_PAGES) },
-                            label = { Text(stringResource(R.string.edit_duplicate_pages)) },
-                            leadingIcon = {
-                                Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp))
-                            },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = PrimaryRed,
-                                selectedLabelColor = CardBackground,
-                                selectedLeadingIconColor = CardBackground
-                            )
+                            leadingIcon = { mod -> ShadcnIcon(imageVector = Icons.Rounded.ContentCopy, modifier = mod, small = true, contentDescription = null) }
                         )
-                        FilterChip(
+                        ShadcnChip(
+                            label = stringResource(R.string.edit_protect),
                             selected = uiState.editAction == EditAction.PROTECT,
                             onClick = { viewModel.setEditAction(EditAction.PROTECT) },
-                            label = { Text(stringResource(R.string.edit_protect)) },
-                            leadingIcon = {
-                                Icon(Icons.Default.Lock, contentDescription = null, modifier = Modifier.size(16.dp))
-                            },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = PrimaryRed,
-                                selectedLabelColor = CardBackground,
-                                selectedLeadingIconColor = CardBackground
-                            )
+                            leadingIcon = { mod -> ShadcnIcon(imageVector = Icons.Rounded.Lock, modifier = mod, small = true, contentDescription = null) }
                         )
-                        FilterChip(
+                        ShadcnChip(
+                            label = stringResource(R.string.edit_unlock),
                             selected = uiState.editAction == EditAction.UNLOCK,
                             onClick = { viewModel.setEditAction(EditAction.UNLOCK) },
-                            label = { Text(stringResource(R.string.edit_unlock)) },
-                            leadingIcon = {
-                                Icon(Icons.Default.LockOpen, contentDescription = null, modifier = Modifier.size(16.dp))
-                            },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = PrimaryRed,
-                                selectedLabelColor = CardBackground,
-                                selectedLeadingIconColor = CardBackground
-                            )
+                            leadingIcon = { mod -> ShadcnIcon(imageVector = Icons.Rounded.LockOpen, modifier = mod, small = true, contentDescription = null) }
                         )
                     }
 
@@ -329,14 +229,10 @@ fun EditPdfScreen(
                             Spacer(modifier = Modifier.height(8.dp))
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 listOf(90, 180, 270).forEach { angle ->
-                                    FilterChip(
+                                    ShadcnChip(
+                                        label = "${angle}°",
                                         selected = uiState.rotationAngle == angle,
-                                        onClick = { viewModel.setRotationAngle(angle) },
-                                        label = { Text("${angle}°") },
-                                        colors = FilterChipDefaults.filterChipColors(
-                                            selectedContainerColor = PrimaryRed,
-                                            selectedLabelColor = CardBackground
-                                        )
+                                        onClick = { viewModel.setRotationAngle(angle) }
                                     )
                                 }
                             }
@@ -518,38 +414,21 @@ fun EditPdfScreen(
 
 
                 // Edit button
-                Button(
+                PrimaryButton(
+                    text = stringResource(R.string.edit_button),
                     onClick = { viewModel.editPdf() },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
+                    icon = when (uiState.editAction) {
+                        EditAction.DELETE_PAGES -> Icons.Rounded.Delete
+                        EditAction.REORDER_PAGES -> Icons.Rounded.SwapVert
+                        EditAction.DUPLICATE_PAGES -> Icons.Rounded.ContentCopy
+                        EditAction.PROTECT -> Icons.Rounded.Lock
+                        EditAction.UNLOCK -> Icons.Rounded.LockOpen
+                        else -> Icons.Rounded.RotateRight
+                    },
                     enabled = uiState.canEdit,
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryRed)
-                ) {
-                    if (uiState.isLoading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(20.dp),
-                            color = CardBackground,
-                            strokeWidth = 2.dp
-                        )
-                    } else {
-                        Icon(
-                            when (uiState.editAction) {
-                                EditAction.DELETE_PAGES -> Icons.Default.Delete
-                                EditAction.REORDER_PAGES -> Icons.Default.SwapVert
-                                EditAction.DUPLICATE_PAGES -> Icons.Default.ContentCopy
-                                EditAction.PROTECT -> Icons.Default.Lock
-                                EditAction.UNLOCK -> Icons.Default.LockOpen
-                                else -> Icons.Default.RotateRight
-                            },
-                            contentDescription = null
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(stringResource(R.string.edit_button))
-                    }
-                }
+                    loading = uiState.isLoading,
+                    modifier = Modifier.padding(16.dp)
+                )
             }
-        }
-    }
+            }
 }
