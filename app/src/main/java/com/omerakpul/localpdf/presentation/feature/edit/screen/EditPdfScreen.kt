@@ -25,6 +25,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.PictureAsPdf
@@ -221,7 +225,7 @@ fun EditPdfScreen(
 
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    Row(
+                    FlowRow(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
@@ -244,6 +248,32 @@ fun EditPdfScreen(
                             label = { Text(stringResource(R.string.edit_rotate_pages)) },
                             leadingIcon = {
                                 Icon(Icons.Default.RotateRight, contentDescription = null, modifier = Modifier.size(16.dp))
+                            },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = PrimaryRed,
+                                selectedLabelColor = CardBackground,
+                                selectedLeadingIconColor = CardBackground
+                            )
+                        )
+                        FilterChip(
+                            selected = uiState.editAction == EditAction.REORDER_PAGES,
+                            onClick = { viewModel.setEditAction(EditAction.REORDER_PAGES) },
+                            label = { Text(stringResource(R.string.edit_reorder_pages)) },
+                            leadingIcon = {
+                                Icon(Icons.Default.SwapVert, contentDescription = null, modifier = Modifier.size(16.dp))
+                            },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = PrimaryRed,
+                                selectedLabelColor = CardBackground,
+                                selectedLeadingIconColor = CardBackground
+                            )
+                        )
+                        FilterChip(
+                            selected = uiState.editAction == EditAction.DUPLICATE_PAGES,
+                            onClick = { viewModel.setEditAction(EditAction.DUPLICATE_PAGES) },
+                            label = { Text(stringResource(R.string.edit_duplicate_pages)) },
+                            leadingIcon = {
+                                Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp))
                             },
                             colors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = PrimaryRed,
@@ -281,6 +311,61 @@ fun EditPdfScreen(
                             Spacer(modifier = Modifier.height(16.dp))
                         }
 
+                        if (uiState.editAction == EditAction.REORDER_PAGES) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.edit_reorder_hint),
+                                    fontSize = 14.sp,
+                                    color = TextSecondary,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                TextButton(onClick = { viewModel.resetPageOrder() }) {
+                                    Text(stringResource(R.string.edit_reset_order), color = PrimaryRed, fontSize = 12.sp)
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
+                            uiState.pageOrder.forEachIndexed { index, originalPage ->
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 3.dp)
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(CardBackground)
+                                        .padding(horizontal = 12.dp, vertical = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "${index + 1}",
+                                        fontSize = 13.sp,
+                                        color = TextSecondary,
+                                        modifier = Modifier.width(28.dp)
+                                    )
+                                    Text(
+                                        text = stringResource(R.string.edit_page_n, originalPage),
+                                        fontSize = 15.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = TextPrimary,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    IconButton(
+                                        onClick = { viewModel.movePage(index, -1) },
+                                        enabled = index > 0
+                                    ) {
+                                        Icon(Icons.Default.KeyboardArrowUp, contentDescription = null, tint = TextPrimary)
+                                    }
+                                    IconButton(
+                                        onClick = { viewModel.movePage(index, 1) },
+                                        enabled = index < uiState.pageOrder.size - 1
+                                    ) {
+                                        Icon(Icons.Default.KeyboardArrowDown, contentDescription = null, tint = TextPrimary)
+                                    }
+                                }
+                            }
+                        } else {
                         // Page selection header
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -340,10 +425,10 @@ fun EditPdfScreen(
                         if (uiState.selectedPages.isNotEmpty()) {
                             Spacer(modifier = Modifier.height(8.dp))
 
-                            val actionText = if (uiState.editAction == EditAction.DELETE_PAGES) {
-                                stringResource(R.string.edit_delete_info, uiState.selectedPages.size)
-                            } else {
-                                stringResource(R.string.edit_rotate_info, uiState.selectedPages.size, uiState.rotationAngle)
+                            val actionText = when (uiState.editAction) {
+                                EditAction.DELETE_PAGES -> stringResource(R.string.edit_delete_info, uiState.selectedPages.size)
+                                EditAction.DUPLICATE_PAGES -> stringResource(R.string.edit_duplicate_info, uiState.selectedPages.size)
+                                else -> stringResource(R.string.edit_rotate_info, uiState.selectedPages.size, uiState.rotationAngle)
                             }
                             Text(
                                 text = actionText,
@@ -351,6 +436,7 @@ fun EditPdfScreen(
                                 color = TextSecondary,
                                 modifier = Modifier.padding(vertical = 4.dp)
                             )
+                        }
                         }
                     }
                 }
@@ -375,8 +461,12 @@ fun EditPdfScreen(
                         )
                     } else {
                         Icon(
-                            if (uiState.editAction == EditAction.DELETE_PAGES) Icons.Default.Delete
-                            else Icons.Default.RotateRight,
+                            when (uiState.editAction) {
+                                EditAction.DELETE_PAGES -> Icons.Default.Delete
+                                EditAction.REORDER_PAGES -> Icons.Default.SwapVert
+                                EditAction.DUPLICATE_PAGES -> Icons.Default.ContentCopy
+                                else -> Icons.Default.RotateRight
+                            },
                             contentDescription = null
                         )
                         Spacer(modifier = Modifier.width(8.dp))
