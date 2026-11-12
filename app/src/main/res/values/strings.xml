@@ -219,5 +219,17 @@
     <string name="edit_reset_order">Reset</string>
     <string name="edit_page_n">Page %1$d</string>
     <string name="edit_duplicate_info">%d pages will be duplicated</string>
+    <string name="edit_protect">Protect</string>
+    <string name="edit_unlock">Unlock</string>
+    <string name="edit_protect_hint">Set a password. It will be required to open the PDF.</string>
+    <string name="edit_unlock_hint">Enter the current password to remove the protection.</string>
+    <string name="edit_password">Password</string>
+    <string name="edit_password_confirm">Confirm password</string>
+    <string name="edit_password_mismatch">Passwords do not match</string>
+    <string name="edit_password_warning">If you forget the password, the file cannot be recovered.</string>
+    <string name="error_wrong_password">Wrong password</string>
+    <string name="error_pdf_already_encrypted">This PDF is already password protected. Unlock it first.</string>
+    <string name="detail_protected">Protection</string>
+    <string name="detail_protected_value">Password protected</string>
 </resources>
 

@@ -13,6 +13,8 @@ data class EditPdfUiState(
     val pageOrder: List<Int> = emptyList(),
     val editAction: EditAction = EditAction.NONE,
     val rotationAngle: Int = 90,
+    val password: String = "",
+    val confirmPassword: String = "",
     val isLoading: Boolean = false,
     val error: String? = null,
     val editSuccess: Boolean = false,
@@ -22,6 +24,8 @@ data class EditPdfUiState(
         get() = selectedPdf != null && !isLoading && when (editAction) {
             EditAction.NONE -> false
             EditAction.REORDER_PAGES -> PageOrder.isChanged(pageOrder)
+            EditAction.PROTECT -> password.isNotEmpty() && password == confirmPassword
+            EditAction.UNLOCK -> password.isNotEmpty()
             else -> selectedPages.isNotEmpty()
         }
 }
@@ -31,5 +35,7 @@ enum class EditAction {
     DELETE_PAGES,
     ROTATE_PAGES,
     REORDER_PAGES,
-    DUPLICATE_PAGES
+    DUPLICATE_PAGES,
+    PROTECT,
+    UNLOCK
 }

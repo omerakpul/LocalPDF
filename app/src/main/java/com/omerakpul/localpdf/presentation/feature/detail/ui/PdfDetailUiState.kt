@@ -5,6 +5,7 @@ data class PdfDetailUiState(
     val fileName: String = "",
     val fileSize: Long = 0,
     val pageCount: Int = 0,
+    val isEncrypted: Boolean = false,
     val createdDate: String = "",
     val isLoading: Boolean = false,
     val error: String? = null,

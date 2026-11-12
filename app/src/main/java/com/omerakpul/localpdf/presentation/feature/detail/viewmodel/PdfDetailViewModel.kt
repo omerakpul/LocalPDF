@@ -16,6 +16,7 @@ import com.omerakpul.localpdf.domain.repository.PdfRepository
 import com.omerakpul.localpdf.presentation.feature.detail.ui.PdfDetailUiState
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 import com.tom_roush.pdfbox.pdmodel.PDDocument
+import com.tom_roush.pdfbox.pdmodel.encryption.InvalidPasswordException
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -62,10 +63,17 @@ class PdfDetailViewModel @Inject constructor(
                 }
 
                 val isPdf = file.extension.lowercase() == "pdf"
+                var isEncrypted = false
                 val pageCount = if (isPdf) {
                     withContext(Dispatchers.IO) {
-                        PDDocument.load(file).use { doc ->
-                            doc.numberOfPages
+                        try {
+                            PDDocument.load(file).use { doc ->
+                                doc.numberOfPages
+                            }
+                        } catch (e: InvalidPasswordException) {
+                            // Password-protected: page count is unavailable without the password
+                            isEncrypted = true
+                            0
                         }
                     }
                 } else 0
@@ -80,6 +88,7 @@ class PdfDetailViewModel @Inject constructor(
                         fileName = file.nameWithoutExtension,
                         fileSize = file.length(),
                         pageCount = pageCount,
+                        isEncrypted = isEncrypted,
                         createdDate = createdDate
                     )
                 }

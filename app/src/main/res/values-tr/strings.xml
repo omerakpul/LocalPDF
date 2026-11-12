@@ -220,4 +220,16 @@
     <string name="edit_reset_order">Sıfırla</string>
     <string name="edit_page_n">Sayfa %1$d</string>
     <string name="edit_duplicate_info">%d sayfa çoğaltılacak</string>
+    <string name="edit_protect">Şifrele</string>
+    <string name="edit_unlock">Şifreyi Kaldır</string>
+    <string name="edit_protect_hint">Bir şifre belirleyin. PDF\'yi açmak için gerekecek.</string>
+    <string name="edit_unlock_hint">Korumayı kaldırmak için mevcut şifreyi girin.</string>
+    <string name="edit_password">Şifre</string>
+    <string name="edit_password_confirm">Şifreyi doğrula</string>
+    <string name="edit_password_mismatch">Şifreler eşleşmiyor</string>
+    <string name="edit_password_warning">Şifreyi unutursanız dosyaya erişilemez.</string>
+    <string name="error_wrong_password">Yanlış şifre</string>
+    <string name="error_pdf_already_encrypted">Bu PDF zaten şifreli. Önce şifreyi kaldırın.</string>
+    <string name="detail_protected">Koruma</string>
+    <string name="detail_protected_value">Şifre korumalı</string>
 </resources>

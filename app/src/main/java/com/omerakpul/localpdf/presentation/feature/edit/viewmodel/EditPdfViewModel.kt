@@ -78,7 +78,9 @@ class EditPdfViewModel @Inject constructor(
             it.copy(
                 editAction = action,
                 selectedPages = emptySet(),
-                pageOrder = PageOrder.identity(it.pageCount)
+                pageOrder = PageOrder.identity(it.pageCount),
+                password = "",
+                confirmPassword = ""
             )
         }
     }
@@ -92,6 +94,14 @@ class EditPdfViewModel @Inject constructor(
             }
             current.copy(selectedPages = newSelected)
         }
+    }
+
+    fun setPassword(value: String) {
+        _uiState.update { it.copy(password = value) }
+    }
+
+    fun setConfirmPassword(value: String) {
+        _uiState.update { it.copy(confirmPassword = value) }
     }
 
     fun movePage(index: Int, delta: Int) {
@@ -130,6 +140,8 @@ class EditPdfViewModel @Inject constructor(
                         EditAction.ROTATE_PAGES -> pdfService.rotatePages(pdfUri, state.selectedPages.sorted(), state.rotationAngle)
                         EditAction.REORDER_PAGES -> pdfService.reorderPages(pdfUri, state.pageOrder)
                         EditAction.DUPLICATE_PAGES -> pdfService.duplicatePages(pdfUri, state.selectedPages.sorted())
+                        EditAction.PROTECT -> pdfService.protectPdf(pdfUri, state.password)
+                        EditAction.UNLOCK -> pdfService.unlockPdf(pdfUri, state.password)
                         EditAction.NONE -> throw IllegalStateException("No action selected")
                     }
                 }
@@ -155,7 +167,7 @@ class EditPdfViewModel @Inject constructor(
     }
 
     fun resetSuccess() {
-        _uiState.update { it.copy(editSuccess = false, editedPdfUri = null) }
+        _uiState.update { it.copy(editSuccess = false, editedPdfUri = null, password = "", confirmPassword = "") }
     }
 
     fun clearError() {
