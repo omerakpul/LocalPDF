@@ -176,7 +176,7 @@ fun MergeScreen(
                         .weight(1f)
                         .padding(horizontal = 16.dp)
                 ) {
-                    itemsIndexed(uiState.selectedPdfs) { index, pdfFile ->
+                    itemsIndexed(uiState.selectedPdfs, key = { _, file -> file.id }) { index, pdfFile ->
                         PdfFileItem(
                             pdfFile = pdfFile,
                             index = index,

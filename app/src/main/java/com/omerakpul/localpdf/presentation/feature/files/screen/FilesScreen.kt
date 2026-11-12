@@ -399,7 +399,7 @@ private fun FilesContent(
                     contentPadding = PaddingValues(vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    items(uiState.filteredFiles) { pdf ->
+                    items(uiState.filteredFiles, key = { it.id }) { pdf ->
                         PdfListItem(
                             pdf = pdf,
                             onClick = { onOpenPdf(pdf.filePath) },

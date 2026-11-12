@@ -12,6 +12,7 @@ import android.graphics.drawable.ColorDrawable
 import android.content.Intent
 import android.content.SharedPreferences
 import android.net.Uri
+import android.util.Log
 import android.provider.OpenableColumns
 import android.widget.Toast
 import androidx.core.content.IntentCompat
@@ -138,6 +139,7 @@ class MainActivity : ComponentActivity() {
             } ?: return null
             target.absolutePath
         } catch (e: Exception) {
+            Log.w("MainActivity", "Could not copy shared file to cache: $uri", e)
             null
         }
     }
