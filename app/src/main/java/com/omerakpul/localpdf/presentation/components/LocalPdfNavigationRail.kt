@@ -48,7 +48,7 @@ fun LocalPdfNavigationRail(
                 modifier = Modifier.padding(vertical = 16.dp)
             ) {
                 Icon(
-                    painter = painterResource(id = R.drawable.lpdflogo),
+                    painter = painterResource(id = R.drawable.logo_mark),
                     contentDescription = stringResource(id = R.string.app_name),
                     tint = MaterialTheme.colorScheme.primary, // Or use TextPrimary if you have it in scope
                     modifier = Modifier.height(32.dp)

@@ -231,7 +231,7 @@ private fun HomeContent(
                 contentAlignment = Alignment.Center
             ) {
                 Image(
-                    painter = painterResource(id = R.drawable.lpdflogo),
+                    painter = painterResource(id = R.drawable.logo_mark),
                     contentDescription = null,
                     modifier = Modifier.size(56.dp).scale(1.9f)
                 )
