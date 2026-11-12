@@ -33,6 +33,12 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.RotateRight
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.LockOpen
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -281,6 +287,32 @@ fun EditPdfScreen(
                                 selectedLeadingIconColor = CardBackground
                             )
                         )
+                        FilterChip(
+                            selected = uiState.editAction == EditAction.PROTECT,
+                            onClick = { viewModel.setEditAction(EditAction.PROTECT) },
+                            label = { Text(stringResource(R.string.edit_protect)) },
+                            leadingIcon = {
+                                Icon(Icons.Default.Lock, contentDescription = null, modifier = Modifier.size(16.dp))
+                            },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = PrimaryRed,
+                                selectedLabelColor = CardBackground,
+                                selectedLeadingIconColor = CardBackground
+                            )
+                        )
+                        FilterChip(
+                            selected = uiState.editAction == EditAction.UNLOCK,
+                            onClick = { viewModel.setEditAction(EditAction.UNLOCK) },
+                            label = { Text(stringResource(R.string.edit_unlock)) },
+                            leadingIcon = {
+                                Icon(Icons.Default.LockOpen, contentDescription = null, modifier = Modifier.size(16.dp))
+                            },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = PrimaryRed,
+                                selectedLabelColor = CardBackground,
+                                selectedLeadingIconColor = CardBackground
+                            )
+                        )
                     }
 
                     if (uiState.editAction != EditAction.NONE) {
@@ -311,7 +343,49 @@ fun EditPdfScreen(
                             Spacer(modifier = Modifier.height(16.dp))
                         }
 
-                        if (uiState.editAction == EditAction.REORDER_PAGES) {
+                        if (uiState.editAction == EditAction.PROTECT || uiState.editAction == EditAction.UNLOCK) {
+                            Text(
+                                text = stringResource(
+                                    if (uiState.editAction == EditAction.PROTECT) R.string.edit_protect_hint
+                                    else R.string.edit_unlock_hint
+                                ),
+                                fontSize = 14.sp,
+                                color = TextSecondary
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            OutlinedTextField(
+                                value = uiState.password,
+                                onValueChange = { viewModel.setPassword(it) },
+                                label = { Text(stringResource(R.string.edit_password)) },
+                                singleLine = true,
+                                visualTransformation = PasswordVisualTransformation(),
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            if (uiState.editAction == EditAction.PROTECT) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                OutlinedTextField(
+                                    value = uiState.confirmPassword,
+                                    onValueChange = { viewModel.setConfirmPassword(it) },
+                                    label = { Text(stringResource(R.string.edit_password_confirm)) },
+                                    singleLine = true,
+                                    visualTransformation = PasswordVisualTransformation(),
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                                    isError = uiState.confirmPassword.isNotEmpty() && uiState.confirmPassword != uiState.password,
+                                    supportingText = {
+                                        if (uiState.confirmPassword.isNotEmpty() && uiState.confirmPassword != uiState.password) {
+                                            Text(stringResource(R.string.edit_password_mismatch))
+                                        }
+                                    },
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                                Text(
+                                    text = stringResource(R.string.edit_password_warning),
+                                    fontSize = 12.sp,
+                                    color = TextSecondary
+                                )
+                            }
+                        } else if (uiState.editAction == EditAction.REORDER_PAGES) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -465,6 +539,8 @@ fun EditPdfScreen(
                                 EditAction.DELETE_PAGES -> Icons.Default.Delete
                                 EditAction.REORDER_PAGES -> Icons.Default.SwapVert
                                 EditAction.DUPLICATE_PAGES -> Icons.Default.ContentCopy
+                                EditAction.PROTECT -> Icons.Default.Lock
+                                EditAction.UNLOCK -> Icons.Default.LockOpen
                                 else -> Icons.Default.RotateRight
                             },
                             contentDescription = null

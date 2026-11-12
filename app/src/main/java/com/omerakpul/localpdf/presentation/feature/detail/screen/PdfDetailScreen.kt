@@ -232,7 +232,9 @@ fun PdfDetailScreen(
                         Spacer(modifier = Modifier.height(12.dp))
 
                         InfoRow("Size", formatFileSize(uiState.fileSize))
-                        if (isPdf) {
+                        if (isPdf && uiState.isEncrypted) {
+                            InfoRow(stringResource(R.string.detail_protected), stringResource(R.string.detail_protected_value))
+                        } else if (isPdf) {
                             InfoRow("Pages", "${uiState.pageCount}")
                         }
                         InfoRow("Created", uiState.createdDate)
@@ -240,7 +242,7 @@ fun PdfDetailScreen(
 
                     Spacer(modifier = Modifier.weight(1f))
 
-                    if (isPdf) {
+                    if (isPdf && !uiState.isEncrypted) {
                         OutlinedButton(
                             onClick = onViewPdf,
                             modifier = Modifier.fillMaxWidth(),

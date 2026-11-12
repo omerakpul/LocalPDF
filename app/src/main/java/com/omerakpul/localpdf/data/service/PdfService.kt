@@ -23,6 +23,9 @@ import com.tom_roush.pdfbox.pdmodel.PDResources
 import com.tom_roush.pdfbox.pdmodel.graphics.form.PDFormXObject
 import com.tom_roush.pdfbox.pdmodel.graphics.image.JPEGFactory
 import com.tom_roush.pdfbox.pdmodel.graphics.image.PDImageXObject
+import com.tom_roush.pdfbox.pdmodel.encryption.AccessPermission
+import com.tom_roush.pdfbox.pdmodel.encryption.InvalidPasswordException
+import com.tom_roush.pdfbox.pdmodel.encryption.StandardProtectionPolicy
 import com.tom_roush.pdfbox.rendering.PDFRenderer
 import com.tom_roush.pdfbox.util.Matrix as PdfMatrix
 import com.tom_roush.pdfbox.text.PDFTextStripper
@@ -390,6 +393,56 @@ class PdfService @Inject constructor(
                 sourceFile.delete()
             }
         }
+
+    /** Encrypts the PDF (128-bit) so it asks for [password] when opened. */
+    suspend fun protectPdf(pdfUri: Uri, password: String): File = withContext(Dispatchers.IO) {
+        val sourceFile = uriToFile(pdfUri)
+        try {
+            val document = try {
+                PDDocument.load(sourceFile)
+            } catch (e: InvalidPasswordException) {
+                throw Exception(context.getString(R.string.error_pdf_already_encrypted))
+            }
+            document.use {
+                val policy = StandardProtectionPolicy(password, password, AccessPermission())
+                policy.encryptionKeyLength = 128
+                it.protect(policy)
+
+                val outputFile = File(
+                    context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS),
+                    "protected_${System.currentTimeMillis()}.pdf"
+                )
+                it.save(outputFile)
+                outputFile
+            }
+        } finally {
+            sourceFile.delete()
+        }
+    }
+
+    /** Removes the password protection from a PDF, given its current [password]. */
+    suspend fun unlockPdf(pdfUri: Uri, password: String): File = withContext(Dispatchers.IO) {
+        val sourceFile = uriToFile(pdfUri)
+        try {
+            val document = try {
+                PDDocument.load(sourceFile, password)
+            } catch (e: InvalidPasswordException) {
+                throw Exception(context.getString(R.string.error_wrong_password))
+            }
+            document.use {
+                it.isAllSecurityToBeRemoved = true
+
+                val outputFile = File(
+                    context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS),
+                    "unlocked_${System.currentTimeMillis()}.pdf"
+                )
+                it.save(outputFile)
+                outputFile
+            }
+        } finally {
+            sourceFile.delete()
+        }
+    }
 
     suspend fun rotatePages(pdfUri: Uri, pagesToRotate: List<Int>, angle: Int): File =
         withContext(Dispatchers.IO) {
