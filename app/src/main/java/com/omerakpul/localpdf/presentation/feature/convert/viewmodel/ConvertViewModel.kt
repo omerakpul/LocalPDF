@@ -67,12 +67,21 @@ class ConvertViewModel @Inject constructor(
         val fileUri = _uiState.value.selectedFileUri ?: return
 
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, error = null) }
+            _uiState.update { it.copy(isLoading = true, error = null, progress = 0f) }
 
             try {
+                if (_uiState.value.conversionMode == ConversionMode.PDF_TO_IMAGES) {
+                    val baseName = _uiState.value.fileName.substringBeforeLast('.')
+                    val count = pdfService.exportPdfToImages(fileUri, baseName) { progress ->
+                        _uiState.update { it.copy(progress = progress) }
+                    }
+                    _uiState.update { it.copy(isLoading = false, imagesExported = count) }
+                    return@launch
+                }
+
                 val resultFile = when (_uiState.value.conversionMode) {
                     ConversionMode.WORD_TO_PDF -> pdfService.convertWordToPdf(fileUri)
-                    ConversionMode.PDF_TO_WORD -> pdfService.convertPdfToWord(fileUri)
+                    else -> pdfService.convertPdfToWord(fileUri)
                 }
                 val resultUri = Uri.fromFile(resultFile)
 
@@ -93,6 +102,10 @@ class ConvertViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    fun resetImagesExported() {
+        _uiState.update { it.copy(imagesExported = 0) }
     }
 
     fun resetSuccess() {

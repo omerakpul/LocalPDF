@@ -7,6 +7,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -31,6 +33,7 @@ import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -55,7 +58,7 @@ import com.omerakpul.localpdf.presentation.feature.convert.ui.ConversionMode
 import com.omerakpul.localpdf.presentation.feature.convert.viewmodel.ConvertViewModel
 import com.omerakpul.localpdf.presentation.theme.*
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun ConvertScreen(
     onBack: () -> Unit,
@@ -76,6 +79,15 @@ fun ConvertScreen(
             val path = uiState.convertedFileUri!!.path!!
             viewModel.resetSuccess()
             onNavigateToDetail(path)
+        }
+    }
+
+    // Report finished image export
+    val savedMessage = stringResource(R.string.convert_images_saved, uiState.imagesExported)
+    LaunchedEffect(uiState.imagesExported) {
+        if (uiState.imagesExported > 0) {
+            snackbarHostState.showSnackbar(savedMessage)
+            viewModel.resetImagesExported()
         }
     }
 
@@ -118,7 +130,7 @@ fun ConvertScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            Row(
+            FlowRow(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
@@ -135,6 +147,15 @@ fun ConvertScreen(
                     selected = uiState.conversionMode == ConversionMode.PDF_TO_WORD,
                     onClick = { viewModel.setConversionMode(ConversionMode.PDF_TO_WORD) },
                     label = { Text(stringResource(R.string.convert_pdf_to_word)) },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = PrimaryRed,
+                        selectedLabelColor = CardBackground
+                    )
+                )
+                FilterChip(
+                    selected = uiState.conversionMode == ConversionMode.PDF_TO_IMAGES,
+                    onClick = { viewModel.setConversionMode(ConversionMode.PDF_TO_IMAGES) },
+                    label = { Text(stringResource(R.string.convert_pdf_to_images)) },
                     colors = FilterChipDefaults.filterChipColors(
                         selectedContainerColor = PrimaryRed,
                         selectedLabelColor = CardBackground
@@ -175,10 +196,11 @@ fun ConvertScreen(
                             color = TextPrimary
                         )
                         Text(
-                            text = if (uiState.conversionMode == ConversionMode.WORD_TO_PDF)
-                                stringResource(R.string.convert_empty_word_subtitle)
-                            else
-                                stringResource(R.string.convert_empty_pdf_subtitle),
+                            text = when (uiState.conversionMode) {
+                                ConversionMode.WORD_TO_PDF -> stringResource(R.string.convert_empty_word_subtitle)
+                                ConversionMode.PDF_TO_WORD -> stringResource(R.string.convert_empty_pdf_subtitle)
+                                ConversionMode.PDF_TO_IMAGES -> stringResource(R.string.convert_empty_images_subtitle)
+                            },
                             fontSize = 14.sp,
                             color = TextSecondary
                         )
@@ -257,7 +279,11 @@ fun ConvertScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     val fromExt = if (uiState.conversionMode == ConversionMode.WORD_TO_PDF) ".docx" else ".pdf"
-                    val toExt = if (uiState.conversionMode == ConversionMode.WORD_TO_PDF) ".pdf" else ".docx"
+                    val toExt = when (uiState.conversionMode) {
+                        ConversionMode.WORD_TO_PDF -> ".pdf"
+                        ConversionMode.PDF_TO_WORD -> ".docx"
+                        ConversionMode.PDF_TO_IMAGES -> ".png"
+                    }
 
                     Text(text = fromExt, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = ConvertIconColor)
                     Spacer(modifier = Modifier.width(16.dp))
@@ -267,6 +293,16 @@ fun ConvertScreen(
                 }
 
                 Spacer(modifier = Modifier.weight(1f))
+
+                if (uiState.isLoading && uiState.conversionMode == ConversionMode.PDF_TO_IMAGES) {
+                    LinearProgressIndicator(
+                        progress = { uiState.progress },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 12.dp),
+                        color = PrimaryRed
+                    )
+                }
 
 
 
