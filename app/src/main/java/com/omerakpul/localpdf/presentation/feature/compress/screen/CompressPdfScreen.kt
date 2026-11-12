@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -307,6 +308,25 @@ fun CompressPdfScreen(
                             )
                         }
                     }
+                }
+
+                if (uiState.selectedPdf != null && uiState.imageBytes == 0L) {
+                    Text(
+                        text = stringResource(R.string.compress_no_images),
+                        fontSize = 13.sp,
+                        color = TextSecondary,
+                        modifier = Modifier.padding(horizontal = 16.dp)
+                    )
+                }
+
+                if (uiState.isLoading) {
+                    LinearProgressIndicator(
+                        progress = { uiState.progress },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
+                        color = PrimaryRed
+                    )
                 }
 
                 // Compress Button

@@ -12,7 +12,10 @@ data class CompressPdfUiState(
     val error: String? = null,
     val compressSuccess: Boolean = false,
     val compressedPdfUri: Uri? = null,
-    val estimatedSize: Long = 0
+    val estimatedSize: Long = 0,
+    // Bytes used by recompressible images; negative = not analysed (yet)
+    val imageBytes: Long = -1,
+    val progress: Float = 0f
 ) {
     val canCompress: Boolean
         get() = selectedPdf != null && !isLoading
