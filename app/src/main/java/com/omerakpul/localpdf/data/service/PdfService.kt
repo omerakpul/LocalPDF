@@ -1,6 +1,7 @@
 package com.omerakpul.localpdf.data.service
 
 import android.content.Context
+import com.omerakpul.localpdf.R
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
@@ -49,7 +50,7 @@ class PdfService @Inject constructor(
 
     private fun uriToFile(uri: Uri): File {
         val inputStream = context.contentResolver.openInputStream(uri)
-            ?: throw Exception("Dosya açılamadı")
+            ?: throw Exception(context.getString(R.string.error_cannot_open_file))
         val file = File.createTempFile("temp_", ".pdf", context.cacheDir)
         try {
             inputStream.use { input ->
@@ -79,7 +80,7 @@ class PdfService @Inject constructor(
         val options = BitmapFactory.Options().apply { inSampleSize = sample }
         val decoded = context.contentResolver.openInputStream(uri)?.use {
             BitmapFactory.decodeStream(it, null, options)
-        } ?: throw Exception("Bitmap oluşturulamadı")
+        } ?: throw Exception(context.getString(R.string.error_cannot_open_file))
 
         val orientation = try {
             context.contentResolver.openInputStream(uri)?.use {
@@ -332,7 +333,7 @@ class PdfService @Inject constructor(
             val wordDocument = try {
                 FileInputStream(wordFile).use { XWPFDocument(it) }
             } catch (e: Exception) {
-                throw Exception("Sadece geçerli .docx dosyaları destekleniyor")
+                throw Exception(context.getString(R.string.error_invalid_docx))
             }
 
             val unicodeFont = loadUnicodeFont(document)

@@ -1,9 +1,12 @@
 package com.omerakpul.localpdf.presentation.feature.split.viewmodel
 
+import kotlinx.coroutines.CancellationException
+import com.omerakpul.localpdf.R
 import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
 import androidx.lifecycle.ViewModel
+import com.omerakpul.localpdf.data.service.FileInfoProvider
 import androidx.lifecycle.viewModelScope
 import com.omerakpul.localpdf.data.service.PdfService
 import com.omerakpul.localpdf.domain.model.Pdf
@@ -30,7 +33,8 @@ class SplitPdfViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val pdfService: PdfService,
     private val pdfRepository: PdfRepository,
-    private val memoryUtil: MemoryUtil
+    private val memoryUtil: MemoryUtil,
+    private val fileInfo: FileInfoProvider
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SplitPdfUiState())
@@ -45,7 +49,7 @@ class SplitPdfViewModel @Inject constructor(
             if (fileSize > maxSize) {
                 _uiState.update { current ->
                     current.copy(
-                        error = "File is too large (${memoryUtil.formatSize(fileSize)}). Your device strongly limits processing files above ${memoryUtil.formatSize(maxSize)} for stability."
+                        error = context.getString(R.string.error_file_too_large, memoryUtil.formatSize(fileSize), memoryUtil.formatSize(maxSize))
                     )
                 }
                 return@launch
@@ -148,10 +152,11 @@ class SplitPdfViewModel @Inject constructor(
                     )
                 }
             } catch (e: Exception) {
+                if (e is CancellationException) throw e
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        error = e.message ?: "Split failed"
+                        error = e.message ?: context.getString(R.string.error_split_failed)
                     )
                 }
             }
@@ -189,44 +194,13 @@ class SplitPdfViewModel @Inject constructor(
 
     private suspend fun getPdfInfo(uri: Uri): Triple<String, Int, Long> {
         return withContext(Dispatchers.IO) {
-            val name = getFileName(uri) ?: "unknown.pdf"
-            val pageCount = getPageCount(uri)
-            val size = getFileSize(uri)
+            val name = fileInfo.getFileName(uri) ?: "unknown.pdf"
+            val pageCount = fileInfo.getPageCount(uri)
+            val size = fileInfo.getFileSize(uri)
             Triple(name, pageCount, size)
         }
     }
 
-    private fun getFileName(uri: Uri): String? {
-        var name: String? = null
-        context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
-            val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-            if (cursor.moveToFirst() && nameIndex >= 0) {
-                name = cursor.getString(nameIndex)
-            }
-        }
-        return name
-    }
 
-    private fun getFileSize(uri: Uri): Long {
-        var size = 0L
-        context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
-            val sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE)
-            if (cursor.moveToFirst() && sizeIndex >= 0) {
-                size = cursor.getLong(sizeIndex)
-            }
-        }
-        return size
-    }
 
-    private fun getPageCount(uri: Uri): Int {
-        return try {
-            context.contentResolver.openInputStream(uri)?.use { inputStream ->
-                PDDocument.load(inputStream).use { document ->
-                    document.numberOfPages
-                }
-            } ?: 0
-        } catch (e: Exception) {
-            0
-        }
-    }
 }

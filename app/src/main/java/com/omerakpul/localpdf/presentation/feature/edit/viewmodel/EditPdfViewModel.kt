@@ -1,10 +1,13 @@
 package com.omerakpul.localpdf.presentation.feature.edit.viewmodel
 
+import kotlinx.coroutines.CancellationException
+import com.omerakpul.localpdf.R
 import android.content.Context
 import android.net.Uri
 import android.os.Environment
 import android.provider.OpenableColumns
 import androidx.lifecycle.ViewModel
+import com.omerakpul.localpdf.data.service.FileInfoProvider
 import androidx.lifecycle.viewModelScope
 import com.tom_roush.pdfbox.pdmodel.PDDocument
 import com.omerakpul.localpdf.presentation.feature.edit.ui.EditAction
@@ -25,7 +28,8 @@ import javax.inject.Inject
 @HiltViewModel
 class EditPdfViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val memoryUtil: MemoryUtil
+    private val memoryUtil: MemoryUtil,
+    private val fileInfo: FileInfoProvider
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(EditPdfUiState())
@@ -34,20 +38,20 @@ class EditPdfViewModel @Inject constructor(
     fun selectPdf(uri: Uri) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
-                val size = getFileSize(uri)
+                val size = fileInfo.getFileSize(uri)
                 val maxSize = memoryUtil.getMaxAllowedFileSizeBytes()
 
                 if (size > maxSize) {
                     _uiState.update { current ->
                         current.copy(
-                            error = "File is too large (${memoryUtil.formatSize(size)}). Your device strongly limits processing files above ${memoryUtil.formatSize(maxSize)} for stability."
+                            error = context.getString(R.string.error_file_too_large, memoryUtil.formatSize(size), memoryUtil.formatSize(maxSize))
                         )
                     }
                     return@withContext
                 }
 
-                val name = getFileName(uri) ?: "unknown.pdf"
-                val pageCount = getPageCount(uri)
+                val name = fileInfo.getFileName(uri) ?: "unknown.pdf"
+                val pageCount = fileInfo.getPageCount(uri)
                 
                 _uiState.update {
                     it.copy(
@@ -119,10 +123,11 @@ class EditPdfViewModel @Inject constructor(
                     )
                 }
             } catch (e: Exception) {
+                if (e is CancellationException) throw e
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        error = e.message ?: "Edit failed"
+                        error = e.message ?: context.getString(R.string.error_edit_failed)
                     )
                 }
             }
@@ -193,37 +198,6 @@ class EditPdfViewModel @Inject constructor(
         }
     }
 
-    private fun getFileName(uri: Uri): String? {
-        var name: String? = null
-        context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
-            val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-            if (cursor.moveToFirst() && nameIndex >= 0) {
-                name = cursor.getString(nameIndex)
-            }
-        }
-        return name
-    }
 
-    private fun getFileSize(uri: Uri): Long {
-        var size = 0L
-        context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
-            val sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE)
-            if (cursor.moveToFirst() && sizeIndex >= 0) {
-                size = cursor.getLong(sizeIndex)
-            }
-        }
-        return size
-    }
 
-    private fun getPageCount(uri: Uri): Int {
-        return try {
-            context.contentResolver.openInputStream(uri)?.use { inputStream ->
-                PDDocument.load(inputStream).use { document ->
-                    document.numberOfPages
-                }
-            } ?: 0
-        } catch (e: Exception) {
-            0
-        }
-    }
 }

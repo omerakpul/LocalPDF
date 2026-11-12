@@ -185,5 +185,22 @@
     <!-- PDF Viewer -->
     <string name="viewer_page">%d / %d</string>
     <string name="action_view">View PDF</string>
+
+    <!-- Errors -->
+    <string name="error_file_too_large">File is too large (%1$s). Your device limits processing files above %2$s for stability.</string>
+    <string name="error_files_too_large">One or more files are too large. Your device limits processing files above %1$s for stability.</string>
+    <string name="error_photos_too_large">One or more photos are too large. Your device limits processing files above %1$s for stability.</string>
+    <string name="error_unknown">Unknown error</string>
+    <string name="error_compress_failed">Compression failed</string>
+    <string name="error_convert_failed">Conversion failed</string>
+    <string name="error_edit_failed">Edit failed</string>
+    <string name="error_sign_failed">Signing failed</string>
+    <string name="error_split_failed">Split failed</string>
+    <string name="error_photo_pdf_failed">Failed to create PDF</string>
+    <string name="error_save_failed">Save failed</string>
+    <string name="error_delete_failed">Delete failed</string>
+    <string name="error_file_not_found">File not found</string>
+    <string name="error_cannot_open_file">The file could not be opened</string>
+    <string name="error_invalid_docx">Only valid .docx files are supported</string>
 </resources>
 

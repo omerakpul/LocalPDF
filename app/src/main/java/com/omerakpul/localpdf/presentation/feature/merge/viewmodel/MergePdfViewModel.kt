@@ -1,9 +1,12 @@
 package com.omerakpul.localpdf.presentation.feature.merge.viewmodel
 
+import kotlinx.coroutines.CancellationException
+import com.omerakpul.localpdf.R
 import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
 import androidx.lifecycle.ViewModel
+import com.omerakpul.localpdf.data.service.FileInfoProvider
 import androidx.lifecycle.viewModelScope
 import com.omerakpul.localpdf.data.service.PdfService
 import com.omerakpul.localpdf.domain.model.PdfFile
@@ -25,7 +28,8 @@ import javax.inject.Inject
 class MergePdfViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val pdfService: PdfService,
-    private val memoryUtil: MemoryUtil
+    private val memoryUtil: MemoryUtil,
+    private val fileInfo: FileInfoProvider
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MergePdfUiState())
@@ -49,7 +53,7 @@ class MergePdfViewModel @Inject constructor(
             if (hasOversizedFile) {
                 _uiState.update { current ->
                     current.copy(
-                        error = "One or more files are too large. Your device strongly limits processing files above ${memoryUtil.formatSize(maxSize)} for stability."
+                        error = context.getString(R.string.error_files_too_large, memoryUtil.formatSize(maxSize))
                     )
                 }
             }
@@ -100,10 +104,11 @@ class MergePdfViewModel @Inject constructor(
                     )
                 }
             } catch (e: Exception) {
+                if (e is CancellationException) throw e
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        error = e.message ?: "Unknown error"
+                        error = e.message ?: context.getString(R.string.error_unknown)
                     )
                 }
             }
@@ -121,9 +126,9 @@ class MergePdfViewModel @Inject constructor(
     private suspend fun getPdfInfo(uri: Uri): PdfFile? {
         return withContext(Dispatchers.IO) {
             try {
-                val name = getFileName(uri) ?: "unknown.pdf"
-                val size = getFileSize(uri)
-                val pageCount = getPageCount(uri)
+                val name = fileInfo.getFileName(uri) ?: "unknown.pdf"
+                val size = fileInfo.getFileSize(uri)
+                val pageCount = fileInfo.getPageCount(uri)
                 PdfFile(uri = uri, name = name, size = size, pageCount = pageCount)
             } catch (e: Exception) {
                 null
@@ -131,37 +136,6 @@ class MergePdfViewModel @Inject constructor(
         }
     }
 
-    private fun getFileName(uri: Uri): String? {
-        var name: String? = null
-        context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
-            val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-            if (cursor.moveToFirst() && nameIndex >= 0) {
-                name = cursor.getString(nameIndex)
-            }
-        }
-        return name
-    }
 
-    private fun getFileSize(uri: Uri): Long {
-        var size = 0L
-        context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
-            val sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE)
-            if (cursor.moveToFirst() && sizeIndex >= 0) {
-                size = cursor.getLong(sizeIndex)
-            }
-        }
-        return size
-    }
 
-    private fun getPageCount(uri: Uri): Int {
-        return try {
-            context.contentResolver.openInputStream(uri)?.use { inputStream ->
-                PDDocument.load(inputStream).use { document ->
-                    document.numberOfPages
-                }
-            } ?: 0
-        } catch (e: Exception) {
-            0
-        }
-    }
 }

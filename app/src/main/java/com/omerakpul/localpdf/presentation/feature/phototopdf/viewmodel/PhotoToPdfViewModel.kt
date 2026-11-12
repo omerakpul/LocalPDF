@@ -1,7 +1,10 @@
 package com.omerakpul.localpdf.presentation.feature.phototopdf.viewmodel
 
+import kotlinx.coroutines.CancellationException
+import com.omerakpul.localpdf.R
 import android.net.Uri
 import androidx.lifecycle.ViewModel
+import com.omerakpul.localpdf.data.service.FileInfoProvider
 import android.provider.OpenableColumns
 import androidx.lifecycle.viewModelScope
 import com.omerakpul.localpdf.data.service.PdfService
@@ -20,7 +23,8 @@ import javax.inject.Inject
 class PhotoToPdfViewModel @Inject constructor(
     @ApplicationContext private val context: android.content.Context,
     private val pdfService: PdfService,
-    private val memoryUtil: MemoryUtil
+    private val memoryUtil: MemoryUtil,
+    private val fileInfo: FileInfoProvider
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(PhotoToPdfUiState())
@@ -31,7 +35,7 @@ class PhotoToPdfViewModel @Inject constructor(
         var hasOversizedFile = false
 
         val validPhotos = uris.filter { uri ->
-            val size = getFileSize(uri)
+            val size = fileInfo.getFileSize(uri)
             if (size > maxSize) {
                 hasOversizedFile = true
                 false
@@ -43,7 +47,7 @@ class PhotoToPdfViewModel @Inject constructor(
         if (hasOversizedFile) {
             _uiState.update { current ->
                 current.copy(
-                    error = "One or more photos are too large. Your device strongly limits processing files above ${memoryUtil.formatSize(maxSize)} for stability."
+                    error = context.getString(R.string.error_photos_too_large, memoryUtil.formatSize(maxSize))
                 )
             }
         }
@@ -55,16 +59,6 @@ class PhotoToPdfViewModel @Inject constructor(
         }
     }
 
-    private fun getFileSize(uri: Uri): Long {
-        var size = 0L
-        context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
-            val sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE)
-            if (cursor.moveToFirst() && sizeIndex >= 0) {
-                size = cursor.getLong(sizeIndex)
-            }
-        }
-        return size
-    }
 
     fun removePhoto(uri: Uri) {
         _uiState.update { current ->
@@ -103,10 +97,11 @@ class PhotoToPdfViewModel @Inject constructor(
                     )
                 }
             } catch (e: Exception) {
+                if (e is CancellationException) throw e
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        error = e.message ?: "Failed to create PDF"
+                        error = e.message ?: context.getString(R.string.error_photo_pdf_failed)
                     )
                 }
             }
