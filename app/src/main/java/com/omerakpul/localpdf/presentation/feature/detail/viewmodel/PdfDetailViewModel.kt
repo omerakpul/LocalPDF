@@ -1,5 +1,7 @@
 package com.omerakpul.localpdf.presentation.feature.detail.viewmodel
 
+import kotlinx.coroutines.CancellationException
+import com.omerakpul.localpdf.R
 import android.content.Context
 import android.media.MediaScannerConnection
 import android.os.Environment
@@ -51,7 +53,7 @@ class PdfDetailViewModel @Inject constructor(
             try {
                 val file = File(pdfPath)
                 if (!file.exists()) {
-                    _uiState.update { it.copy(isLoading = false, error = "File not found") }
+                    _uiState.update { it.copy(isLoading = false, error = context.getString(R.string.error_file_not_found)) }
                     return@launch
                 }
 
@@ -78,8 +80,9 @@ class PdfDetailViewModel @Inject constructor(
                     )
                 }
             } catch (e: Exception) {
+                if (e is CancellationException) throw e
                 _uiState.update {
-                    it.copy(isLoading = false, error = e.message ?: "Unknown error")
+                    it.copy(isLoading = false, error = e.message ?: context.getString(R.string.error_unknown))
                 }
             }
         }
@@ -131,8 +134,9 @@ class PdfDetailViewModel @Inject constructor(
 
                 _uiState.update { it.copy(isLoading = false, savedFilePath = savedPath) }
             } catch (e: Exception) {
+                if (e is CancellationException) throw e
                 _uiState.update {
-                     it.copy(isLoading = false, error = e.message ?: "Save failed")
+                     it.copy(isLoading = false, error = e.message ?: context.getString(R.string.error_save_failed))
                 }
             }
         }
@@ -146,7 +150,8 @@ class PdfDetailViewModel @Inject constructor(
                 }
                 _uiState.update { it.copy(isDeleted = true) }
             } catch (e: Exception) {
-                _uiState.update { it.copy(error = e.message ?: "Delete failed") }
+                if (e is CancellationException) throw e
+                _uiState.update { it.copy(error = e.message ?: context.getString(R.string.error_delete_failed)) }
             }
         }
     }

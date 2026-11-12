@@ -186,4 +186,21 @@
     <!-- PDF Viewer -->
     <string name="viewer_page">%d / %d</string>
     <string name="action_view">PDF\'i Görüntüle</string>
+
+    <!-- Errors -->
+    <string name="error_file_too_large">Dosya çok büyük (%1$s). Cihazınız kararlılık için %2$s üzerindeki dosyaların işlenmesini sınırlıyor.</string>
+    <string name="error_files_too_large">Bir veya daha fazla dosya çok büyük. Cihazınız kararlılık için %1$s üzerindeki dosyaların işlenmesini sınırlıyor.</string>
+    <string name="error_photos_too_large">Bir veya daha fazla fotoğraf çok büyük. Cihazınız kararlılık için %1$s üzerindeki dosyaların işlenmesini sınırlıyor.</string>
+    <string name="error_unknown">Bilinmeyen hata</string>
+    <string name="error_compress_failed">Sıkıştırma başarısız oldu</string>
+    <string name="error_convert_failed">Dönüştürme başarısız oldu</string>
+    <string name="error_edit_failed">Düzenleme başarısız oldu</string>
+    <string name="error_sign_failed">İmzalama başarısız oldu</string>
+    <string name="error_split_failed">Bölme başarısız oldu</string>
+    <string name="error_photo_pdf_failed">PDF oluşturulamadı</string>
+    <string name="error_save_failed">Kaydetme başarısız oldu</string>
+    <string name="error_delete_failed">Silme başarısız oldu</string>
+    <string name="error_file_not_found">Dosya bulunamadı</string>
+    <string name="error_cannot_open_file">Dosya açılamadı</string>
+    <string name="error_invalid_docx">Yalnızca geçerli .docx dosyaları desteklenir</string>
 </resources>
