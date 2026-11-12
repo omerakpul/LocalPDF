@@ -28,22 +28,6 @@ import com.omerakpul.localpdf.presentation.feature.settings.screen.SettingsScree
 import com.omerakpul.localpdf.presentation.feature.splash.screen.SplashScreen
 import com.omerakpul.localpdf.presentation.feature.viewer.screen.PdfViewerScreen
 
-private const val SLIDE_MS = 320
-private const val FADE_OUT_MS = 90
-private const val FADE_IN_MS = 210
-
-// Material "fade through": the old screen fades out first, then the new one fades in.
-private val fadeThroughOut = fadeOut(tween(FADE_OUT_MS, easing = FastOutLinearInEasing))
-private val fadeThroughIn = fadeIn(
-    tween(FADE_IN_MS, delayMillis = FADE_OUT_MS, easing = LinearOutSlowInEasing)
-)
-
-private fun NavBackStackEntry.isTab(): Boolean =
-    destination.hasRoute<Home>() || destination.hasRoute<Files>() || destination.hasRoute<Settings>()
-
-private fun AnimatedContentTransitionScope<NavBackStackEntry>.isTabSwitch(): Boolean =
-    initialState.isTab() && targetState.isTab()
-
 @Composable
 fun LocalPdfNavHost(
     windowSizeClass: WindowWidthSizeClass,
@@ -63,30 +47,17 @@ fun LocalPdfNavHost(
     NavHost(
         navController = navController,
         startDestination = Home,
-        // Screens (Merge, Detail, ...) push in from the right over the previous one, which moves
-        // a little to the left underneath. Both stay fully opaque, so nothing shows through.
-        // Switching between the bottom tabs uses a quick "fade through" instead.
-        enterTransition = {
-            if (isTabSwitch()) fadeThroughIn
-            else slideInHorizontally(tween(SLIDE_MS, easing = FastOutSlowInEasing)) { it }
-        },
-        exitTransition = {
-            if (isTabSwitch()) fadeThroughOut
-            else slideOutHorizontally(tween(SLIDE_MS, easing = FastOutSlowInEasing)) { -it / 4 }
-        },
-        popEnterTransition = {
-            if (isTabSwitch()) fadeThroughIn
-            else slideInHorizontally(tween(SLIDE_MS, easing = FastOutSlowInEasing)) { -it / 4 }
-        },
-        popExitTransition = {
-            if (isTabSwitch()) fadeThroughOut
-            else slideOutHorizontally(tween(SLIDE_MS, easing = FastOutSlowInEasing)) { it }
-        }
+        // No screen transitions: every destination (tabs and sub-screens, forward and back)
+        // appears instantly.
+        enterTransition = { EnterTransition.None },
+        exitTransition = { ExitTransition.None },
+        popEnterTransition = { EnterTransition.None },
+        popExitTransition = { ExitTransition.None }
     ) {
         // --- Splash: no enter, fade out ---
         composable<Splash>(
             enterTransition = { EnterTransition.None },
-            exitTransition = { fadeOut(tween(300)) }
+            exitTransition = { ExitTransition.None }
         ) {
             SplashScreen(
                 onNavigateToHome = {
@@ -193,7 +164,7 @@ fun LocalPdfNavHost(
             )
         }
 
-        // --- Sub-screens: use default slide+fade from NavHost ---
+        // --- Sub-screens ---
         composable<Detail> { backStackEntry ->
             val detail: Detail = backStackEntry.toRoute()
             PdfDetailScreen(
