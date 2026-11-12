@@ -11,6 +11,7 @@ import android.os.Environment
 import android.provider.OpenableColumns
 import androidx.compose.ui.geometry.Offset
 import androidx.lifecycle.ViewModel
+import com.omerakpul.localpdf.data.service.PdfService
 import com.omerakpul.localpdf.data.service.FileInfoProvider
 import androidx.lifecycle.viewModelScope
 import com.tom_roush.pdfbox.pdmodel.PDDocument
@@ -34,6 +35,7 @@ import javax.inject.Inject
 @HiltViewModel
 class SignPdfViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
+    private val pdfService: PdfService,
     private val memoryUtil: MemoryUtil,
     private val fileInfo: FileInfoProvider
 ) : ViewModel() {
@@ -139,7 +141,7 @@ class SignPdfViewModel @Inject constructor(
         _uiState.update { it.copy(error = null) }
     }
 
-    private fun addSignatureToPdf(pdfUri: Uri): File {
+    private suspend fun addSignatureToPdf(pdfUri: Uri): File {
         val state = _uiState.value
 
         // Create signature bitmap
@@ -151,40 +153,7 @@ class SignPdfViewModel @Inject constructor(
         val sigBytes = baos.toByteArray()
         sigBitmap.recycle()
 
-        // Copy source PDF
-        val tempFile = File.createTempFile("temp_", ".pdf", context.cacheDir)
-        context.contentResolver.openInputStream(pdfUri)?.use { input ->
-            tempFile.outputStream().use { output -> input.copyTo(output) }
-        }
-
-        val document = PDDocument.load(tempFile)
-        try {
-            val pageIndex = (state.signaturePage - 1).coerceIn(0, document.numberOfPages - 1)
-            val page = document.getPage(pageIndex)
-
-            val sigImage = PDImageXObject.createFromByteArray(document, sigBytes, "signature")
-
-            val sigWidth = 150f
-            val sigHeight = 75f
-            val xPos = page.mediaBox.width - sigWidth - 50f
-            val yPos = 50f
-
-            val contentStream = PDPageContentStream(
-                document, page, PDPageContentStream.AppendMode.APPEND, true, true
-            )
-            contentStream.drawImage(sigImage, xPos, yPos, sigWidth, sigHeight)
-            contentStream.close()
-
-            val outputFile = File(
-                context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS),
-                "signed_${System.currentTimeMillis()}.pdf"
-            )
-            document.save(outputFile)
-            return outputFile
-        } finally {
-            document.close()
-            tempFile.delete()
-        }
+        return pdfService.addSignature(pdfUri, state.signaturePage, sigBytes)
     }
 
     private fun createSignatureBitmap(strokes: List<List<Offset>>, width: Int, height: Int): Bitmap {

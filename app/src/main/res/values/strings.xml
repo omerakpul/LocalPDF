@@ -202,5 +202,6 @@
     <string name="error_file_not_found">File not found</string>
     <string name="error_cannot_open_file">The file could not be opened</string>
     <string name="error_invalid_docx">Only valid .docx files are supported</string>
+    <string name="error_merge_total_too_large">The selected files are too large to merge together. The combined size limit on this device is %1$s.</string>
 </resources>
 
