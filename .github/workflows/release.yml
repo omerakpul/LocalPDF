@@ -25,7 +25,12 @@ jobs:
         run: chmod +x gradlew
 
       - name: Build Release APK
-        run: ./gradlew assembleRelease
+        env:
+          # v1.2.3 -> versionName 1.2.3 (see app/build.gradle.kts)
+          APP_VERSION_TAG: ${{ github.ref_name }}
+        run: |
+          export APP_VERSION="${APP_VERSION_TAG#v}"
+          ./gradlew assembleRelease
 
       - name: Sign and Align APK
         env:

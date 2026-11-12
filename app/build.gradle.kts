@@ -7,6 +7,14 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
+// Version comes from the release tag (APP_VERSION=1.2.3, set by the release workflow).
+// Local builds fall back to 1.0.0. versionCode = major * 10000 + minor * 100 + patch.
+val appVersion: String = System.getenv("APP_VERSION")?.takeIf { it.isNotBlank() } ?: "1.0.0"
+val appVersionCode: Int = appVersion.split(".")
+    .map { part -> part.takeWhile { it.isDigit() }.toIntOrNull() ?: 0 }
+    .let { parts -> (parts.getOrElse(0) { 0 } * 10000) + (parts.getOrElse(1) { 0 } * 100) + parts.getOrElse(2) { 0 } }
+    .coerceAtLeast(1)
+
 android {
     namespace = "com.omerakpul.localpdf"
     compileSdk = 35
@@ -15,8 +23,8 @@ android {
         applicationId = "com.omerakpul.localpdf"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = appVersionCode
+        versionName = appVersion
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -41,6 +49,11 @@ android {
     buildFeatures {
         compose = true
     }
+}
+
+// Room exports its schema so future migrations can be written and tested against it
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
 }
 
 dependencies {
