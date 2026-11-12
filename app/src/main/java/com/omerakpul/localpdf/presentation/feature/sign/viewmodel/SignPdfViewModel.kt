@@ -6,6 +6,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Paint
+import android.graphics.pdf.PdfRenderer
 import android.net.Uri
 import android.os.Environment
 import android.provider.OpenableColumns
@@ -68,6 +69,7 @@ class SignPdfViewModel @Inject constructor(
                         signaturePage = pageCount // default: last page
                     )
                 }
+                loadPagePreview()
             }
         }
     }
@@ -85,20 +87,64 @@ class SignPdfViewModel @Inject constructor(
     fun finishStroke() {
         _uiState.update { current ->
             if (current.currentStroke.isNotEmpty()) {
+                val strokes = current.signaturePoints + listOf(current.currentStroke)
                 current.copy(
-                    signaturePoints = current.signaturePoints + listOf(current.currentStroke),
-                    currentStroke = emptyList()
+                    signaturePoints = strokes,
+                    currentStroke = emptyList(),
+                    signatureBitmap = createSignatureBitmap(strokes, 400, 200)
                 )
             } else current
         }
     }
 
     fun clearSignature() {
-        _uiState.update { it.copy(signaturePoints = emptyList(), currentStroke = emptyList()) }
+        _uiState.update { it.copy(signaturePoints = emptyList(), currentStroke = emptyList(), signatureBitmap = null) }
     }
 
     fun setSignaturePage(page: Int) {
-        _uiState.update { it.copy(signaturePage = page.coerceIn(1, it.pageCount)) }
+        _uiState.update { it.copy(signaturePage = page.coerceIn(1, it.pageCount.coerceAtLeast(1))) }
+        loadPagePreview()
+    }
+
+    fun setSignaturePlacement(x: Float, y: Float, width: Float) {
+        _uiState.update { it.copy(signatureX = x, signatureY = y, signatureWidth = width) }
+    }
+
+    /** Renders the selected page so the user can position the signature on it. */
+    private fun loadPagePreview() {
+        val uri = _uiState.value.selectedPdf ?: return
+        val page = _uiState.value.signaturePage
+        viewModelScope.launch {
+            val bitmap = withContext(Dispatchers.IO) { renderPage(uri, page) }
+            // Ignore stale results if the user changed page/file meanwhile
+            if (_uiState.value.selectedPdf == uri && _uiState.value.signaturePage == page) {
+                _uiState.update { it.copy(pagePreview = bitmap) }
+            }
+        }
+    }
+
+    private fun renderPage(uri: Uri, pageNumber: Int): Bitmap? {
+        return try {
+            context.contentResolver.openFileDescriptor(uri, "r")?.use { pfd ->
+                PdfRenderer(pfd).use { renderer ->
+                    val index = (pageNumber - 1).coerceIn(0, renderer.pageCount - 1)
+                    renderer.openPage(index).use { page ->
+                        val targetWidth = 1000
+                        val scale = targetWidth.toFloat() / page.width
+                        val bitmap = Bitmap.createBitmap(
+                            targetWidth,
+                            (page.height * scale).toInt().coerceAtLeast(1),
+                            Bitmap.Config.ARGB_8888
+                        )
+                        bitmap.eraseColor(android.graphics.Color.WHITE)
+                        page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+                        bitmap
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            null
+        }
     }
 
     fun signPdf() {
@@ -153,7 +199,10 @@ class SignPdfViewModel @Inject constructor(
         val sigBytes = baos.toByteArray()
         sigBitmap.recycle()
 
-        return pdfService.addSignature(pdfUri, state.signaturePage, sigBytes)
+        return pdfService.addSignature(
+            pdfUri, state.signaturePage, sigBytes,
+            state.signatureX, state.signatureY, state.signatureWidth
+        )
     }
 
     private fun createSignatureBitmap(strokes: List<List<Offset>>, width: Int, height: Int): Bitmap {

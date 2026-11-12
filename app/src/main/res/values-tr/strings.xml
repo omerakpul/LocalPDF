@@ -210,4 +210,7 @@
     <string name="detail_file_name">Dosya Adı</string>
     <string name="detail_save_downloads">İndirilenlere Kaydet</string>
     <string name="detail_share_title">%1$s paylaş</string>
+    <string name="sign_preview_title">İmzanızı Yerleştirin</string>
+    <string name="sign_preview_hint">Taşımak için sürükleyin, boyutlandırmak için iki parmakla sıkıştırın</string>
+    <string name="sign_page_of">Sayfa %1$d / %2$d</string>
 </resources>
