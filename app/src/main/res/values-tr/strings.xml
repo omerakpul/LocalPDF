@@ -204,4 +204,10 @@
     <string name="error_cannot_open_file">Dosya açılamadı</string>
     <string name="error_invalid_docx">Yalnızca geçerli .docx dosyaları desteklenir</string>
     <string name="error_merge_total_too_large">Seçilen dosyalar birlikte birleştirilemeyecek kadar büyük. Bu cihazda toplam boyut sınırı %1$s.</string>
+    <string name="detail_delete_title">PDF silinsin mi?</string>
+    <string name="detail_delete_message">Bu işlem geri alınamaz.</string>
+    <string name="detail_title">%1$s Ayrıntıları</string>
+    <string name="detail_file_name">Dosya Adı</string>
+    <string name="detail_save_downloads">İndirilenlere Kaydet</string>
+    <string name="detail_share_title">%1$s paylaş</string>
 </resources>

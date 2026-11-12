@@ -1,6 +1,16 @@
 package com.omerakpul.localpdf
 
+import android.content.Intent
 import android.content.SharedPreferences
+import android.net.Uri
+import android.provider.OpenableColumns
+import android.widget.Toast
+import androidx.core.content.IntentCompat
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.File
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -24,10 +34,14 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var preferencesManager: PreferencesManager
 
+    // Path of a PDF received from another app (VIEW / SEND), consumed by the nav host
+    private var incomingPdfPath by mutableStateOf<String?>(null)
+
     @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        handleIncomingIntent(intent)
         setContent {
             var themeMode by remember { mutableStateOf(preferencesManager.themeMode) }
 
@@ -54,8 +68,55 @@ class MainActivity : ComponentActivity() {
             val windowSizeClass = androidx.compose.material3.windowsizeclass.calculateWindowSizeClass(this)
             
             LocalPDFTheme(darkTheme = isDarkTheme) {
-                LocalPdfNavHost(windowSizeClass = windowSizeClass.widthSizeClass)
+                LocalPdfNavHost(
+                    windowSizeClass = windowSizeClass.widthSizeClass,
+                    incomingPdfPath = incomingPdfPath,
+                    onIncomingPdfHandled = { incomingPdfPath = null }
+                )
             }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleIncomingIntent(intent)
+    }
+
+    private fun handleIncomingIntent(intent: Intent?) {
+        val uri: Uri? = when (intent?.action) {
+            Intent.ACTION_VIEW -> intent.data
+            Intent.ACTION_SEND -> IntentCompat.getParcelableExtra(intent, Intent.EXTRA_STREAM, Uri::class.java)
+            else -> null
+        }
+        if (uri == null) return
+
+        lifecycleScope.launch {
+            val path = withContext(Dispatchers.IO) { copyToCache(uri) }
+            if (path != null) {
+                incomingPdfPath = path
+            } else {
+                Toast.makeText(this@MainActivity, R.string.error_cannot_open_file, Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    /** Copies a shared PDF into the app cache so the in-app viewer can open it by path. */
+    private fun copyToCache(uri: Uri): String? {
+        return try {
+            val displayName = contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+                val index = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                if (cursor.moveToFirst() && index >= 0) cursor.getString(index) else null
+            }
+            val safeName = File(displayName ?: "shared.pdf").name.ifBlank { "shared.pdf" }
+            val dir = File(cacheDir, "incoming").apply { mkdirs() }
+            val target = File(dir, if (safeName.endsWith(".pdf", ignoreCase = true)) safeName else "$safeName.pdf")
+            contentResolver.openInputStream(uri)?.use { input ->
+                target.outputStream().use { output -> input.copyTo(output) }
+            } ?: return null
+            target.absolutePath
+        } catch (e: Exception) {
+            null
         }
     }
 }
