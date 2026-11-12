@@ -10,6 +10,7 @@ import android.net.Uri
 import android.os.Environment
 import com.omerakpul.localpdf.domain.util.CompressionEstimator
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
+import com.tom_roush.pdfbox.cos.COSDictionary
 import com.tom_roush.pdfbox.cos.COSName
 import com.tom_roush.pdfbox.pdmodel.PDDocument
 import com.tom_roush.pdfbox.pdmodel.PDPage
@@ -336,6 +337,59 @@ class PdfService @Inject constructor(
             sourceFile.delete()
         }
     }
+
+    /** Rebuilds the page tree in [newOrder] (1-based original page numbers). */
+    suspend fun reorderPages(pdfUri: Uri, newOrder: List<Int>): File = withContext(Dispatchers.IO) {
+        val sourceFile = uriToFile(pdfUri)
+        val document = PDDocument.load(sourceFile)
+        try {
+            val count = document.numberOfPages
+            val pages = (0 until count).map { document.getPage(it) }
+            val order = newOrder.filter { it in 1..count }
+            if (order.isEmpty()) throw IllegalArgumentException("Empty page order")
+
+            for (i in count - 1 downTo 0) document.pages.remove(i)
+            order.forEach { document.pages.add(pages[it - 1]) }
+
+            val outputFile = File(
+                context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS),
+                "reordered_${System.currentTimeMillis()}.pdf"
+            )
+            document.save(outputFile)
+            outputFile
+        } finally {
+            document.close()
+            sourceFile.delete()
+        }
+    }
+
+    /** Inserts a copy of every selected (1-based) page directly after the original. */
+    suspend fun duplicatePages(pdfUri: Uri, pagesToDuplicate: List<Int>): File =
+        withContext(Dispatchers.IO) {
+            val sourceFile = uriToFile(pdfUri)
+            val document = PDDocument.load(sourceFile)
+            try {
+                // Work from the back so earlier indices stay valid
+                pagesToDuplicate.sortedDescending().forEach { number ->
+                    val index = number - 1
+                    if (index in 0 until document.numberOfPages) {
+                        val original = document.getPage(index)
+                        val copy = PDPage(COSDictionary(original.cosObject))
+                        document.pages.insertAfter(copy, original)
+                    }
+                }
+
+                val outputFile = File(
+                    context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS),
+                    "edited_${System.currentTimeMillis()}.pdf"
+                )
+                document.save(outputFile)
+                outputFile
+            } finally {
+                document.close()
+                sourceFile.delete()
+            }
+        }
 
     suspend fun rotatePages(pdfUri: Uri, pagesToRotate: List<Int>, angle: Int): File =
         withContext(Dispatchers.IO) {

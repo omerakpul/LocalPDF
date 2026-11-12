@@ -7,6 +7,7 @@ import android.net.Uri
 import android.os.Environment
 import android.provider.OpenableColumns
 import androidx.lifecycle.ViewModel
+import com.omerakpul.localpdf.domain.util.PageOrder
 import com.omerakpul.localpdf.data.service.PdfService
 import com.omerakpul.localpdf.data.service.FileInfoProvider
 import androidx.lifecycle.viewModelScope
@@ -60,7 +61,8 @@ class EditPdfViewModel @Inject constructor(
                         selectedPdf = uri,
                         pdfName = name,
                         pageCount = pageCount,
-                        fileSize = size
+                        fileSize = size,
+                        pageOrder = PageOrder.identity(pageCount)
                     )
                 }
             }
@@ -72,7 +74,13 @@ class EditPdfViewModel @Inject constructor(
     }
 
     fun setEditAction(action: EditAction) {
-        _uiState.update { it.copy(editAction = action, selectedPages = emptySet()) }
+        _uiState.update {
+            it.copy(
+                editAction = action,
+                selectedPages = emptySet(),
+                pageOrder = PageOrder.identity(it.pageCount)
+            )
+        }
     }
 
     fun togglePage(page: Int) {
@@ -84,6 +92,14 @@ class EditPdfViewModel @Inject constructor(
             }
             current.copy(selectedPages = newSelected)
         }
+    }
+
+    fun movePage(index: Int, delta: Int) {
+        _uiState.update { it.copy(pageOrder = PageOrder.move(it.pageOrder, index, delta)) }
+    }
+
+    fun resetPageOrder() {
+        _uiState.update { it.copy(pageOrder = PageOrder.identity(it.pageCount)) }
     }
 
     fun selectAllPages() {
@@ -112,6 +128,8 @@ class EditPdfViewModel @Inject constructor(
                     when (state.editAction) {
                         EditAction.DELETE_PAGES -> pdfService.deletePages(pdfUri, state.selectedPages.sorted())
                         EditAction.ROTATE_PAGES -> pdfService.rotatePages(pdfUri, state.selectedPages.sorted(), state.rotationAngle)
+                        EditAction.REORDER_PAGES -> pdfService.reorderPages(pdfUri, state.pageOrder)
+                        EditAction.DUPLICATE_PAGES -> pdfService.duplicatePages(pdfUri, state.selectedPages.sorted())
                         EditAction.NONE -> throw IllegalStateException("No action selected")
                     }
                 }
