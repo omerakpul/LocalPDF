@@ -110,6 +110,8 @@ class MainActivity : ComponentActivity() {
             }
             val safeName = File(displayName ?: "shared.pdf").name.ifBlank { "shared.pdf" }
             val dir = File(cacheDir, "incoming").apply { mkdirs() }
+            // Remove copies of previously shared files so they do not pile up in the cache
+            dir.listFiles()?.forEach { it.delete() }
             val target = File(dir, if (safeName.endsWith(".pdf", ignoreCase = true)) safeName else "$safeName.pdf")
             contentResolver.openInputStream(uri)?.use { input ->
                 target.outputStream().use { output -> input.copyTo(output) }
