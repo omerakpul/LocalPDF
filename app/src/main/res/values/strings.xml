@@ -203,5 +203,11 @@
     <string name="error_cannot_open_file">The file could not be opened</string>
     <string name="error_invalid_docx">Only valid .docx files are supported</string>
     <string name="error_merge_total_too_large">The selected files are too large to merge together. The combined size limit on this device is %1$s.</string>
+    <string name="detail_delete_title">Delete PDF?</string>
+    <string name="detail_delete_message">This action cannot be undone.</string>
+    <string name="detail_title">%1$s Details</string>
+    <string name="detail_file_name">File Name</string>
+    <string name="detail_save_downloads">Save to Downloads</string>
+    <string name="detail_share_title">Share %1$s</string>
 </resources>
 

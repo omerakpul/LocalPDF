@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import android.widget.Toast
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -97,7 +98,7 @@ fun PdfDetailScreen(
     // Show error
     LaunchedEffect(uiState.error) {
         uiState.error?.let {
-            // Could show error dialog here if needed
+            Toast.makeText(context, it, Toast.LENGTH_LONG).show()
             viewModel.clearError()
         }
     }
@@ -106,8 +107,8 @@ fun PdfDetailScreen(
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
-            title = { Text("Delete PDF?", color = TextPrimary) },
-            text = { Text("This action cannot be undone.", color = TextSecondary) },
+            title = { Text(stringResource(R.string.detail_delete_title), color = TextPrimary) },
+            text = { Text(stringResource(R.string.detail_delete_message), color = TextSecondary) },
             confirmButton = {
                 Button(
                     onClick = {
@@ -116,12 +117,12 @@ fun PdfDetailScreen(
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = PrimaryRed)
                 ) {
-                    Text("Delete")
+                    Text(stringResource(R.string.action_delete))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteDialog = false }) {
-                    Text("Cancel", color = TextSecondary)
+                    Text(stringResource(R.string.action_cancel), color = TextSecondary)
                 }
             },
             containerColor = CardBackground
@@ -134,7 +135,7 @@ fun PdfDetailScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("$fileLabel Details", color = TextPrimary) },
+                title = { Text(stringResource(R.string.detail_title, fileLabel), color = TextPrimary) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = TextPrimary)
@@ -195,7 +196,7 @@ fun PdfDetailScreen(
                     OutlinedTextField(
                         value = uiState.fileName,
                         onValueChange = { viewModel.updateFileName(it) },
-                        label = { Text("File Name") },
+                        label = { Text(stringResource(R.string.detail_file_name)) },
                         trailingIcon = {
                             Icon(Icons.Default.Edit, contentDescription = null, tint = TextSecondary)
                         },
@@ -261,7 +262,7 @@ fun PdfDetailScreen(
                     ) {
                         Icon(Icons.Default.Save, contentDescription = null)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Save to Downloads")
+                        Text(stringResource(R.string.detail_save_downloads))
                     }
 
                     Spacer(modifier = Modifier.height(12.dp))
@@ -282,14 +283,14 @@ fun PdfDetailScreen(
                                 putExtra(Intent.EXTRA_STREAM, contentUri)
                                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                             }
-                            context.startActivity(Intent.createChooser(intent, "Share $fileLabel"))
+                            context.startActivity(Intent.createChooser(intent, context.getString(R.string.detail_share_title, fileLabel)))
                         },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Icon(Icons.Default.Share, contentDescription = null, tint = PrimaryRed)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Share", color = PrimaryRed)
+                        Text(stringResource(R.string.action_share), color = PrimaryRed)
                     }
 
                     Spacer(modifier = Modifier.height(12.dp))
@@ -300,7 +301,7 @@ fun PdfDetailScreen(
                     ) {
                         Icon(Icons.Default.Delete, contentDescription = null, tint = PrimaryRed)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Delete", color = PrimaryRed)
+                        Text(stringResource(R.string.action_delete), color = PrimaryRed)
                     }
                 }
             }

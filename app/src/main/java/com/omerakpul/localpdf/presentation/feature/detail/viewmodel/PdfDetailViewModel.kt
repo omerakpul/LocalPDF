@@ -2,9 +2,12 @@ package com.omerakpul.localpdf.presentation.feature.detail.viewmodel
 
 import kotlinx.coroutines.CancellationException
 import com.omerakpul.localpdf.R
+import android.content.ContentValues
 import android.content.Context
 import android.media.MediaScannerConnection
+import android.os.Build
 import android.os.Environment
+import android.provider.MediaStore
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -23,6 +26,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -99,37 +103,24 @@ class PdfDetailViewModel @Inject constructor(
             try {
                 val savedPath = withContext(Dispatchers.IO) {
                     val sourceFile = File(pdfPath)
-                    val downloadsDir = Environment.getExternalStoragePublicDirectory(
-                        Environment.DIRECTORY_DOWNLOADS
-                    )
-                    
                     val extension = sourceFile.extension
                     val mimeType = if (extension.lowercase() == "pdf") "application/pdf" else "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                    
                     val fileName = "${_uiState.value.fileName}.$extension"
-                    val destFile = File(downloadsDir, fileName)
-                    
-                    sourceFile.copyTo(destFile, overwrite = true)
 
-                    MediaScannerConnection.scanFile(
-                        context,
-                        arrayOf(destFile.absolutePath),
-                        arrayOf(mimeType),
-                        null
-                    )
+                    copyToDownloads(sourceFile, fileName, mimeType)
 
-                    // Insert into Room DB so it appears in Files list
+                    // Keep the app-private copy in the Files list (always readable by the app)
                     val pdf = Pdf(
                         name = fileName,
-                        filePath = destFile.absolutePath,
-                        fileSize = destFile.length(),
+                        filePath = sourceFile.absolutePath,
+                        fileSize = sourceFile.length(),
                         createdAt = System.currentTimeMillis(),
                         pageCount = _uiState.value.pageCount,
                         sourceType = try { com.omerakpul.localpdf.domain.model.PdfSourceType.valueOf(sourceType) } catch (e: Exception) { com.omerakpul.localpdf.domain.model.PdfSourceType.UNKNOWN }
                     )
                     pdfRepository.insertPdf(pdf)
 
-                    destFile.absolutePath
+                    sourceFile.absolutePath
                 }
 
                 _uiState.update { it.copy(isLoading = false, savedFilePath = savedPath) }
@@ -139,6 +130,43 @@ class PdfDetailViewModel @Inject constructor(
                      it.copy(isLoading = false, error = e.message ?: context.getString(R.string.error_save_failed))
                 }
             }
+        }
+    }
+
+    /**
+     * Copies a file into the public Downloads folder.
+     * Android 10+ requires MediaStore (direct File writes to Downloads are blocked).
+     */
+    private fun copyToDownloads(sourceFile: File, fileName: String, mimeType: String) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val resolver = context.contentResolver
+            val values = ContentValues().apply {
+                put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
+                put(MediaStore.MediaColumns.MIME_TYPE, mimeType)
+                put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+                put(MediaStore.MediaColumns.IS_PENDING, 1)
+            }
+            val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
+                ?: throw IOException(context.getString(R.string.error_save_failed))
+            try {
+                resolver.openOutputStream(uri)?.use { output ->
+                    sourceFile.inputStream().use { it.copyTo(output) }
+                } ?: throw IOException(context.getString(R.string.error_save_failed))
+                values.clear()
+                values.put(MediaStore.MediaColumns.IS_PENDING, 0)
+                resolver.update(uri, values, null, null)
+            } catch (e: Exception) {
+                resolver.delete(uri, null, null)
+                throw e
+            }
+        } else {
+            // Android 8-9: legacy storage (needs WRITE_EXTERNAL_STORAGE)
+            val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+            val destFile = File(downloadsDir, fileName)
+            sourceFile.copyTo(destFile, overwrite = true)
+            MediaScannerConnection.scanFile(
+                context, arrayOf(destFile.absolutePath), arrayOf(mimeType), null
+            )
         }
     }
 
