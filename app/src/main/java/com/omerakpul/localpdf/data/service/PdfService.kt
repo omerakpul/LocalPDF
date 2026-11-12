@@ -7,6 +7,13 @@ import android.graphics.BitmapFactory
 import android.graphics.Matrix
 import android.media.ExifInterface
 import android.net.Uri
+import android.content.ContentValues
+import android.graphics.pdf.PdfRenderer
+import android.media.MediaScannerConnection
+import android.os.Build
+import android.os.ParcelFileDescriptor
+import android.provider.MediaStore
+import com.omerakpul.localpdf.domain.util.ImageExportNaming
 import android.os.Environment
 import com.omerakpul.localpdf.domain.util.CompressionEstimator
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
@@ -632,6 +639,89 @@ class PdfService @Inject constructor(
         val italic = load("Roboto-Italic.ttf", "NotoSans-Italic.ttf") ?: regular
         val boldItalic = load("Roboto-BoldItalic.ttf", "NotoSans-BoldItalic.ttf") ?: bold
         return WordToPdfRenderer.Fonts(regular, bold, italic, boldItalic, isUnicode = true)
+    }
+
+    /**
+     * Renders every page of a PDF to a PNG and stores it in Pictures/LocalPDF.
+     * @return the number of images saved
+     */
+    suspend fun exportPdfToImages(
+        pdfUri: Uri,
+        baseName: String,
+        onProgress: (Float) -> Unit = {}
+    ): Int = withContext(Dispatchers.IO) {
+        val sourceFile = uriToFile(pdfUri)
+        try {
+            val pfd = ParcelFileDescriptor.open(sourceFile, ParcelFileDescriptor.MODE_READ_ONLY)
+            val renderer = try {
+                PdfRenderer(pfd)
+            } catch (e: SecurityException) {
+                pfd.close()
+                throw Exception(context.getString(R.string.error_pdf_already_encrypted))
+            }
+            renderer.use { r ->
+                val total = r.pageCount
+                for (index in 0 until total) {
+                    r.openPage(index).use { page ->
+                        // ~150 DPI, capped so very large pages do not exhaust memory
+                        var scale = 150f / 72f
+                        val maxSide = maxOf(page.width, page.height) * scale
+                        if (maxSide > 3000f) scale *= 3000f / maxSide
+                        val bitmap = Bitmap.createBitmap(
+                            (page.width * scale).toInt().coerceAtLeast(1),
+                            (page.height * scale).toInt().coerceAtLeast(1),
+                            Bitmap.Config.ARGB_8888
+                        )
+                        try {
+                            bitmap.eraseColor(android.graphics.Color.WHITE)
+                            page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+                            saveImage(bitmap, ImageExportNaming.pageFileName(baseName, index + 1, total))
+                        } finally {
+                            bitmap.recycle()
+                        }
+                    }
+                    onProgress((index + 1).toFloat() / total)
+                }
+                total
+            }
+        } finally {
+            sourceFile.delete()
+        }
+    }
+
+    /** Saves a bitmap as PNG into Pictures/LocalPDF (MediaStore on Android 10+). */
+    private fun saveImage(bitmap: Bitmap, fileName: String) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val resolver = context.contentResolver
+            val values = ContentValues().apply {
+                put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
+                put(MediaStore.MediaColumns.MIME_TYPE, "image/png")
+                put(MediaStore.MediaColumns.RELATIVE_PATH, "${Environment.DIRECTORY_PICTURES}/LocalPDF")
+                put(MediaStore.MediaColumns.IS_PENDING, 1)
+            }
+            val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
+                ?: throw java.io.IOException(context.getString(R.string.error_save_failed))
+            try {
+                resolver.openOutputStream(uri)?.use { out ->
+                    bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+                } ?: throw java.io.IOException(context.getString(R.string.error_save_failed))
+                values.clear()
+                values.put(MediaStore.MediaColumns.IS_PENDING, 0)
+                resolver.update(uri, values, null, null)
+            } catch (e: Exception) {
+                resolver.delete(uri, null, null)
+                throw e
+            }
+        } else {
+            // Android 8-9: legacy storage (needs WRITE_EXTERNAL_STORAGE)
+            val dir = File(
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES),
+                "LocalPDF"
+            ).apply { mkdirs() }
+            val file = File(dir, fileName)
+            FileOutputStream(file).use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+            MediaScannerConnection.scanFile(context, arrayOf(file.absolutePath), arrayOf("image/png"), null)
+        }
     }
 
     suspend fun convertPdfToWord(pdfUri: Uri): File = withContext(Dispatchers.IO) {

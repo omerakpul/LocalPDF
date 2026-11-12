@@ -231,5 +231,8 @@
     <string name="error_pdf_already_encrypted">This PDF is already password protected. Unlock it first.</string>
     <string name="detail_protected">Protection</string>
     <string name="detail_protected_value">Password protected</string>
+    <string name="convert_pdf_to_images">PDF → Images</string>
+    <string name="convert_empty_images_subtitle">Select a PDF to save its pages as images</string>
+    <string name="convert_images_saved">%1$d images saved to Pictures/LocalPDF</string>
 </resources>
 

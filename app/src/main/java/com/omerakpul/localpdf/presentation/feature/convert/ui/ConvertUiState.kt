@@ -10,7 +10,10 @@ data class ConvertUiState(
     val isLoading: Boolean = false,
     val error: String? = null,
     val convertSuccess: Boolean = false,
-    val convertedFileUri: Uri? = null
+    val convertedFileUri: Uri? = null,
+    val progress: Float = 0f,
+    // Number of images saved by the last PDF -> images export (0 = none)
+    val imagesExported: Int = 0
 ) {
     val canConvert: Boolean
         get() = selectedFileUri != null && !isLoading
@@ -18,5 +21,6 @@ data class ConvertUiState(
 
 enum class ConversionMode {
     WORD_TO_PDF,
-    PDF_TO_WORD
+    PDF_TO_WORD,
+    PDF_TO_IMAGES
 }

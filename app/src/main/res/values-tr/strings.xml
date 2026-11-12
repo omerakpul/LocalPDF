@@ -232,4 +232,7 @@
     <string name="error_pdf_already_encrypted">Bu PDF zaten şifreli. Önce şifreyi kaldırın.</string>
     <string name="detail_protected">Koruma</string>
     <string name="detail_protected_value">Şifre korumalı</string>
+    <string name="convert_pdf_to_images">PDF → Görsel</string>
+    <string name="convert_empty_images_subtitle">Sayfalarını görsel olarak kaydetmek için bir PDF seçin</string>
+    <string name="convert_images_saved">%1$d görsel Pictures/LocalPDF klasörüne kaydedildi</string>
 </resources>
