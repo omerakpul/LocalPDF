@@ -25,7 +25,9 @@ object AppModule {
             PdfDatabase::class.java,
             "pdf_database"
         )
-            .fallbackToDestructiveMigration()
+            // Only the pre-release schema (v1) may be wiped. Every later version bump must
+            // come with an explicit Migration so users keep their data.
+            .fallbackToDestructiveMigrationFrom(1)
             .build()
     }
 
