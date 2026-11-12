@@ -94,7 +94,7 @@ internal fun navRailItemColors() = NavigationRailItemDefaults.colors(
 
 /**
  * Compact floating navigation dock with Home, Files and Settings.
- * Only icons are shown; the selected tab expands into a crimson pill that also shows its label.
+ * Only icons are shown; the selected tab sits in a crimson pill (page titles already name the screen).
  */
 @Composable
 fun BottomNavBar(
@@ -154,33 +154,21 @@ private fun NavPill(
     )
     val title = stringResource(item.titleResId)
 
-    Row(
+    Box(
         modifier = Modifier
             .height(44.dp)
-            .animateContentSize(tween(180))
+            .width(56.dp)
             .clip(RoundedCornerShape(22.dp))
             .background(background)
-            .selectable(selected = selected, role = Role.Tab, onClick = onClick)
-            .padding(horizontal = if (selected) 18.dp else 16.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center
+            .selectable(selected = selected, role = Role.Tab, onClick = onClick),
+        contentAlignment = Alignment.Center
     ) {
         Icon(
             imageVector = if (selected) item.selectedIcon else item.unselectedIcon,
-            contentDescription = if (selected) null else title,
+            contentDescription = title,
             tint = content,
             modifier = Modifier.size(24.dp)
         )
-        if (selected) {
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = title,
-                color = content,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 1
-            )
-        }
     }
 }
 
