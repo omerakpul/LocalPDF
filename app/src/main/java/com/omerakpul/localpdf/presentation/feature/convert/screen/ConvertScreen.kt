@@ -2,6 +2,8 @@
 
 package com.omerakpul.localpdf.presentation.feature.convert.screen
 
+import com.omerakpul.localpdf.domain.util.formatFileSize
+import com.omerakpul.localpdf.domain.util.ExportImageFormat
 import com.omerakpul.localpdf.presentation.components.rememberLegacyStorageGate
 import androidx.compose.foundation.style.ExperimentalFoundationStyleApi
 import io.github.ronjunevaldoz.shadcncompose.components.ShadcnIcon
@@ -153,6 +155,22 @@ fun ConvertScreen(
                 )
             }
 
+            if (uiState.conversionMode == ConversionMode.PDF_TO_IMAGES) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    ExportImageFormat.entries.forEach { format ->
+                        ShadcnChip(
+                            label = stringResource(
+                                if (format == ExportImageFormat.PNG) R.string.convert_format_png
+                                else R.string.convert_format_jpg
+                            ),
+                            selected = uiState.imageFormat == format,
+                            onClick = { viewModel.setImageFormat(format) }
+                        )
+                    }
+                }
+            }
+
             Spacer(modifier = Modifier.height(24.dp))
 
             if (uiState.selectedFileUri == null) {
@@ -230,7 +248,7 @@ fun ConvertScreen(
                     val toExt = when (uiState.conversionMode) {
                         ConversionMode.WORD_TO_PDF -> ".pdf"
                         ConversionMode.PDF_TO_WORD -> ".docx"
-                        ConversionMode.PDF_TO_IMAGES -> ".png"
+                        ConversionMode.PDF_TO_IMAGES -> ".${uiState.imageFormat.extension}"
                     }
 
                     Text(text = fromExt, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = ConvertIconColor)
@@ -271,10 +289,3 @@ fun ConvertScreen(
             }
 }
 
-private fun formatFileSize(size: Long): String {
-    return when {
-        size < 1024 -> "$size B"
-        size < 1024 * 1024 -> String.format("%.1f KB", size / 1024.0)
-        else -> String.format("%.1f MB", size / (1024.0 * 1024.0))
-    }
-}

@@ -1,5 +1,6 @@
 package com.omerakpul.localpdf.presentation.feature.split.viewmodel
 
+import com.omerakpul.localpdf.domain.util.PageRanges
 import kotlinx.coroutines.CancellationException
 import com.omerakpul.localpdf.R
 import android.content.Context
@@ -121,18 +122,13 @@ class SplitPdfViewModel @Inject constructor(
 
             try {
                 val pageRanges = when (state.splitMode) {
-                    SplitMode.EXTRACT_ALL -> {
-                        // Her sayfa ayrı bir PDF
-                        (1..state.pageCount).map { it..it }
-                    }
-                    SplitMode.RANGE -> {
-                        // Tek bir aralık
-                        listOf(state.rangeStart..state.rangeEnd)
-                    }
-                    SplitMode.SELECT_PAGES -> {
-                        // Her seçilen sayfa ayrı bir PDF
-                        state.selectedPages.sorted().map { it..it }
-                    }
+                    SplitMode.EXTRACT_ALL -> PageRanges.eachPage(state.pageCount)
+                    SplitMode.RANGE -> PageRanges.single(state.rangeStart, state.rangeEnd, state.pageCount)
+                    SplitMode.SELECT_PAGES -> PageRanges.selectedPages(state.selectedPages)
+                }
+                if (pageRanges.isEmpty()) {
+                    _uiState.update { it.copy(isLoading = false, error = context.getString(R.string.error_split_failed)) }
+                    return@launch
                 }
 
                 val resultFiles = pdfService.splitPdfs(pdfUri, pageRanges)

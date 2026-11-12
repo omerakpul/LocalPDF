@@ -1,5 +1,6 @@
 package com.omerakpul.localpdf.presentation.feature.merge.screen
 
+import com.omerakpul.localpdf.domain.util.formatFileSize
 import androidx.compose.material.icons.rounded.Add
 import com.omerakpul.localpdf.presentation.components.SecondaryButton
 import com.omerakpul.localpdf.presentation.components.PrimaryButton
@@ -304,10 +305,3 @@ private fun PdfFileItem(
     }
 }
 
-private fun formatFileSize(size: Long): String {
-    return when {
-        size < 1024 -> "$size B"
-        size < 1024 * 1024 -> String.format("%.1f KB", size / 1024.0)
-        else -> String.format("%.1f MB", size / (1024.0 * 1024.0))
-    }
-}

@@ -247,5 +247,9 @@
     <string name="viewer_error">This file could not be opened.</string>
     <string name="viewer_error_protected">This PDF is password protected. Remove the password first.</string>
     <string name="storage_permission_denied">Storage permission is needed to save this file.</string>
+    <string name="convert_format_png">PNG (lossless)</string>
+    <string name="convert_format_jpg">JPG (smaller)</string>
+    <string name="licenses_third_party">THIRD-PARTY COMPONENTS</string>
+    <string name="licenses_apache_note">Each component above is licensed under the Apache License 2.0. The full license text follows.</string>
 </resources>
 

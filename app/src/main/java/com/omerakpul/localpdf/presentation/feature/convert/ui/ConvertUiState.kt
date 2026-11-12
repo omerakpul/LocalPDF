@@ -1,5 +1,6 @@
 package com.omerakpul.localpdf.presentation.feature.convert.ui
 
+import com.omerakpul.localpdf.domain.util.ExportImageFormat
 import android.net.Uri
 
 data class ConvertUiState(
@@ -13,7 +14,8 @@ data class ConvertUiState(
     val convertedFileUri: Uri? = null,
     val progress: Float = 0f,
     // Number of images saved by the last PDF -> images export (0 = none)
-    val imagesExported: Int = 0
+    val imagesExported: Int = 0,
+    val imageFormat: ExportImageFormat = ExportImageFormat.PNG
 ) {
     val canConvert: Boolean
         get() = selectedFileUri != null && !isLoading

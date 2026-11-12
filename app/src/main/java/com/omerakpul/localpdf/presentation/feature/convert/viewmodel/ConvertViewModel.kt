@@ -1,5 +1,6 @@
 package com.omerakpul.localpdf.presentation.feature.convert.viewmodel
 
+import com.omerakpul.localpdf.domain.util.ExportImageFormat
 import kotlinx.coroutines.CancellationException
 import com.omerakpul.localpdf.R
 import android.content.Context
@@ -33,7 +34,7 @@ class ConvertViewModel @Inject constructor(
     val uiState: StateFlow<ConvertUiState> = _uiState.asStateFlow()
 
     fun setConversionMode(mode: ConversionMode) {
-        _uiState.update { ConvertUiState(conversionMode = mode) }
+        _uiState.update { ConvertUiState(conversionMode = mode, imageFormat = it.imageFormat) }
     }
 
     fun selectFile(uri: Uri) {
@@ -72,7 +73,7 @@ class ConvertViewModel @Inject constructor(
             try {
                 if (_uiState.value.conversionMode == ConversionMode.PDF_TO_IMAGES) {
                     val baseName = _uiState.value.fileName.substringBeforeLast('.')
-                    val count = pdfService.exportPdfToImages(fileUri, baseName) { progress ->
+                    val count = pdfService.exportPdfToImages(fileUri, baseName, _uiState.value.imageFormat) { progress ->
                         _uiState.update { it.copy(progress = progress) }
                     }
                     _uiState.update { it.copy(isLoading = false, imagesExported = count) }
@@ -102,6 +103,10 @@ class ConvertViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    fun setImageFormat(format: ExportImageFormat) {
+        _uiState.update { it.copy(imageFormat = format) }
     }
 
     fun resetImagesExported() {
