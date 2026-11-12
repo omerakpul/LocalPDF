@@ -21,6 +21,7 @@ import com.tom_roush.pdfbox.pdmodel.graphics.form.PDFormXObject
 import com.tom_roush.pdfbox.pdmodel.graphics.image.JPEGFactory
 import com.tom_roush.pdfbox.pdmodel.graphics.image.PDImageXObject
 import com.tom_roush.pdfbox.rendering.PDFRenderer
+import com.tom_roush.pdfbox.util.Matrix as PdfMatrix
 import com.tom_roush.pdfbox.text.PDFTextStripper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -324,36 +325,59 @@ class PdfService @Inject constructor(
             }
         }
 
-    /** Draws a PNG signature image at the bottom-right of the given (1-based) page. */
-    suspend fun addSignature(pdfUri: Uri, pageNumber: Int, signaturePng: ByteArray): File =
-        withContext(Dispatchers.IO) {
-            val sourceFile = uriToFile(pdfUri)
-            val document = PDDocument.load(sourceFile)
-            try {
-                val pageIndex = (pageNumber - 1).coerceIn(0, document.numberOfPages - 1)
-                val page = document.getPage(pageIndex)
-                val sigImage = PDImageXObject.createFromByteArray(document, signaturePng, "signature")
+    /**
+     * Draws a PNG signature on the given (1-based) page.
+     * [xFraction]/[yFraction] are the signature's top-left corner and [widthFraction] its width,
+     * all relative to the page as displayed (rotation applied). The signature keeps a 2:1 ratio.
+     */
+    suspend fun addSignature(
+        pdfUri: Uri,
+        pageNumber: Int,
+        signaturePng: ByteArray,
+        xFraction: Float,
+        yFraction: Float,
+        widthFraction: Float
+    ): File = withContext(Dispatchers.IO) {
+        val sourceFile = uriToFile(pdfUri)
+        val document = PDDocument.load(sourceFile)
+        try {
+            val pageIndex = (pageNumber - 1).coerceIn(0, document.numberOfPages - 1)
+            val page = document.getPage(pageIndex)
+            val sigImage = PDImageXObject.createFromByteArray(document, signaturePng, "signature")
 
-                val sigWidth = 150f
-                val sigHeight = 75f
-                val xPos = page.mediaBox.width - sigWidth - 50f
-                val yPos = 50f
+            val box = page.cropBox
+            val rotation = ((page.rotation % 360) + 360) % 360
+            val userW = box.width
+            val userH = box.height
+            val dispW = if (rotation == 90 || rotation == 270) userH else userW
+            val dispH = if (rotation == 90 || rotation == 270) userW else userH
 
-                PDPageContentStream(
-                    document, page, PDPageContentStream.AppendMode.APPEND, true, true
-                ).use { it.drawImage(sigImage, xPos, yPos, sigWidth, sigHeight) }
+            // Signature rectangle in display space (origin top-left, y down)
+            val dw = (widthFraction * dispW).coerceAtLeast(1f)
+            val dh = dw / 2f
+            val left = (xFraction * dispW).coerceIn(0f, (dispW - dw).coerceAtLeast(0f))
+            val top = (yFraction * dispH).coerceIn(0f, (dispH - dh).coerceAtLeast(0f))
 
-                val outputFile = File(
-                    context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS),
-                    "signed_${System.currentTimeMillis()}.pdf"
-                )
-                document.save(outputFile)
-                outputFile
-            } finally {
-                document.close()
-                sourceFile.delete()
-            }
+            val m = SignaturePlacement.matrixFor(
+                rotation, userW, userH, left, top, dw, dh, box.lowerLeftX, box.lowerLeftY
+            )
+            val matrix = PdfMatrix(m.a, m.b, m.c, m.d, m.e, m.f)
+
+            PDPageContentStream(
+                document, page, PDPageContentStream.AppendMode.APPEND, true, true
+            ).use { it.drawImage(sigImage, matrix) }
+
+            val outputFile = File(
+                context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS),
+                "signed_${System.currentTimeMillis()}.pdf"
+            )
+            document.save(outputFile)
+            outputFile
+        } finally {
+            document.close()
+            sourceFile.delete()
         }
+    }
 
     suspend fun createPdfFromPhotos(photos: List<Uri>): File = withContext(Dispatchers.IO) {
         val document = PDDocument()

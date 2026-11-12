@@ -1,6 +1,22 @@
 package com.omerakpul.localpdf.presentation.feature.sign.screen
 
 import android.net.Uri
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.filled.ChevronLeft
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.IntOffset
+import com.omerakpul.localpdf.presentation.feature.sign.ui.SignPdfUiState
+import kotlin.math.roundToInt
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
@@ -170,6 +186,7 @@ fun SignPdfScreen(
                 Column(
                     modifier = Modifier
                         .weight(1f)
+                        .verticalScroll(rememberScrollState())
                         .padding(16.dp)
                 ) {
                     // Selected PDF card
@@ -306,23 +323,15 @@ fun SignPdfScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Signature placement info
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(CardBackground)
-                            .padding(16.dp)
-                    ) {
-                        Text(
-                            text = stringResource(R.string.sign_placement_info, uiState.signaturePage),
-                            fontSize = 14.sp,
-                            color = TextSecondary
+                    // Signature placement (drag / pinch on the page preview)
+                    if (uiState.hasSignature) {
+                        SignaturePlacementPreview(
+                            uiState = uiState,
+                            onPageChange = { viewModel.setSignaturePage(it) },
+                            onPlacementChange = { x, y, w -> viewModel.setSignaturePlacement(x, y, w) }
                         )
                     }
                 }
-
-
 
                 // Sign button
                 Button(
@@ -347,6 +356,112 @@ fun SignPdfScreen(
                     }
                 }
             }
+        }
+    }
+}
+
+
+@Composable
+private fun SignaturePlacementPreview(
+    uiState: SignPdfUiState,
+    onPageChange: (Int) -> Unit,
+    onPlacementChange: (Float, Float, Float) -> Unit
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = stringResource(R.string.sign_preview_title),
+            fontSize = 16.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = TextPrimary
+        )
+        Text(
+            text = stringResource(R.string.sign_preview_hint),
+            fontSize = 13.sp,
+            color = TextSecondary
+        )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(
+                onClick = { onPageChange(uiState.signaturePage - 1) },
+                enabled = uiState.signaturePage > 1
+            ) {
+                Icon(Icons.Default.ChevronLeft, contentDescription = null, tint = TextPrimary)
+            }
+            Text(
+                text = stringResource(R.string.sign_page_of, uiState.signaturePage, uiState.pageCount),
+                fontSize = 14.sp,
+                color = TextPrimary
+            )
+            IconButton(
+                onClick = { onPageChange(uiState.signaturePage + 1) },
+                enabled = uiState.signaturePage < uiState.pageCount
+            ) {
+                Icon(Icons.Default.ChevronRight, contentDescription = null, tint = TextPrimary)
+            }
+        }
+
+        val preview = uiState.pagePreview
+        val signature = uiState.signatureBitmap
+        if (preview == null || signature == null) {
+            Text(
+                text = stringResource(R.string.sign_placement_info, uiState.signaturePage),
+                fontSize = 14.sp,
+                color = TextSecondary
+            )
+            return
+        }
+
+        val latestState = rememberUpdatedState(uiState)
+        val latestCallback = rememberUpdatedState(onPlacementChange)
+
+        BoxWithConstraints(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(preview.width.toFloat() / preview.height)
+                .border(1.dp, TextSecondary.copy(alpha = 0.3f))
+        ) {
+            val boxW = constraints.maxWidth.toFloat()
+            val boxH = constraints.maxHeight.toFloat()
+            val density = LocalDensity.current
+
+            Image(
+                bitmap = preview.asImageBitmap(),
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.FillBounds
+            )
+
+            val sigWidthPx = uiState.signatureWidth * boxW
+            Image(
+                bitmap = signature.asImageBitmap(),
+                contentDescription = null,
+                modifier = Modifier
+                    .offset {
+                        IntOffset(
+                            (uiState.signatureX * boxW).roundToInt(),
+                            (uiState.signatureY * boxH).roundToInt()
+                        )
+                    }
+                    .size(
+                        width = with(density) { sigWidthPx.toDp() },
+                        height = with(density) { (sigWidthPx / 2f).toDp() }
+                    )
+                    .border(1.dp, PrimaryRed)
+                    .pointerInput(boxW, boxH) {
+                        detectTransformGestures { _, pan, zoom, _ ->
+                            val current = latestState.value
+                            val newW = (current.signatureWidth * zoom).coerceIn(0.1f, 0.9f)
+                            val newH = newW * boxW / 2f / boxH
+                            val x = (current.signatureX + pan.x / boxW).coerceIn(0f, (1f - newW).coerceAtLeast(0f))
+                            val y = (current.signatureY + pan.y / boxH).coerceIn(0f, (1f - newH).coerceAtLeast(0f))
+                            latestCallback.value(x, y, newW)
+                        }
+                    }
+            )
         }
     }
 }
