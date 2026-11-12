@@ -58,9 +58,31 @@ class MergePdfViewModel @Inject constructor(
                 }
             }
 
-            if (newPdfs.isNotEmpty()) {
+            // Merging keeps every source document open, so cap the combined size too
+            val maxTotal = maxSize * 2
+            var runningTotal = _uiState.value.selectedPdfs.sumOf { it.size }
+            var exceedsTotal = false
+            val accepted = mutableListOf<PdfFile>()
+            for (pdf in newPdfs) {
+                if (runningTotal + pdf.size > maxTotal) {
+                    exceedsTotal = true
+                } else {
+                    runningTotal += pdf.size
+                    accepted.add(pdf)
+                }
+            }
+
+            if (exceedsTotal) {
                 _uiState.update { current ->
-                    current.copy(selectedPdfs = current.selectedPdfs + newPdfs)
+                    current.copy(
+                        error = context.getString(R.string.error_merge_total_too_large, memoryUtil.formatSize(maxTotal))
+                    )
+                }
+            }
+
+            if (accepted.isNotEmpty()) {
+                _uiState.update { current ->
+                    current.copy(selectedPdfs = current.selectedPdfs + accepted)
                 }
             }
         }

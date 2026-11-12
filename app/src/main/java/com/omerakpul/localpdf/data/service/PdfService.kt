@@ -275,6 +275,86 @@ class PdfService @Inject constructor(
         }
     }
 
+    suspend fun deletePages(pdfUri: Uri, pagesToDelete: List<Int>): File = withContext(Dispatchers.IO) {
+        val sourceFile = uriToFile(pdfUri)
+        val document = PDDocument.load(sourceFile)
+        try {
+            // Delete in reverse order to avoid index shifting
+            pagesToDelete.sortedDescending().forEach { page ->
+                val pageIndex = page - 1
+                if (pageIndex in 0 until document.numberOfPages) {
+                    document.removePage(pageIndex)
+                }
+            }
+
+            val outputFile = File(
+                context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS),
+                "edited_${System.currentTimeMillis()}.pdf"
+            )
+            document.save(outputFile)
+            outputFile
+        } finally {
+            document.close()
+            sourceFile.delete()
+        }
+    }
+
+    suspend fun rotatePages(pdfUri: Uri, pagesToRotate: List<Int>, angle: Int): File =
+        withContext(Dispatchers.IO) {
+            val sourceFile = uriToFile(pdfUri)
+            val document = PDDocument.load(sourceFile)
+            try {
+                pagesToRotate.forEach { page ->
+                    val pageIndex = page - 1
+                    if (pageIndex in 0 until document.numberOfPages) {
+                        val pdfPage = document.getPage(pageIndex)
+                        pdfPage.rotation = ((pdfPage.rotation + angle) % 360 + 360) % 360
+                    }
+                }
+
+                val outputFile = File(
+                    context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS),
+                    "edited_${System.currentTimeMillis()}.pdf"
+                )
+                document.save(outputFile)
+                outputFile
+            } finally {
+                document.close()
+                sourceFile.delete()
+            }
+        }
+
+    /** Draws a PNG signature image at the bottom-right of the given (1-based) page. */
+    suspend fun addSignature(pdfUri: Uri, pageNumber: Int, signaturePng: ByteArray): File =
+        withContext(Dispatchers.IO) {
+            val sourceFile = uriToFile(pdfUri)
+            val document = PDDocument.load(sourceFile)
+            try {
+                val pageIndex = (pageNumber - 1).coerceIn(0, document.numberOfPages - 1)
+                val page = document.getPage(pageIndex)
+                val sigImage = PDImageXObject.createFromByteArray(document, signaturePng, "signature")
+
+                val sigWidth = 150f
+                val sigHeight = 75f
+                val xPos = page.mediaBox.width - sigWidth - 50f
+                val yPos = 50f
+
+                PDPageContentStream(
+                    document, page, PDPageContentStream.AppendMode.APPEND, true, true
+                ).use { it.drawImage(sigImage, xPos, yPos, sigWidth, sigHeight) }
+
+                val outputFile = File(
+                    context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS),
+                    "signed_${System.currentTimeMillis()}.pdf"
+                )
+                document.save(outputFile)
+                outputFile
+            } finally {
+                document.close()
+                sourceFile.delete()
+            }
+        }
+
     suspend fun createPdfFromPhotos(photos: List<Uri>): File = withContext(Dispatchers.IO) {
         val document = PDDocument()
 

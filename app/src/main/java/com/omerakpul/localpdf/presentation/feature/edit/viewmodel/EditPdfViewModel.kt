@@ -7,6 +7,7 @@ import android.net.Uri
 import android.os.Environment
 import android.provider.OpenableColumns
 import androidx.lifecycle.ViewModel
+import com.omerakpul.localpdf.data.service.PdfService
 import com.omerakpul.localpdf.data.service.FileInfoProvider
 import androidx.lifecycle.viewModelScope
 import com.tom_roush.pdfbox.pdmodel.PDDocument
@@ -28,6 +29,7 @@ import javax.inject.Inject
 @HiltViewModel
 class EditPdfViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
+    private val pdfService: PdfService,
     private val memoryUtil: MemoryUtil,
     private val fileInfo: FileInfoProvider
 ) : ViewModel() {
@@ -108,8 +110,8 @@ class EditPdfViewModel @Inject constructor(
             try {
                 val resultFile = withContext(Dispatchers.IO) {
                     when (state.editAction) {
-                        EditAction.DELETE_PAGES -> deletePages(pdfUri, state.selectedPages.sorted())
-                        EditAction.ROTATE_PAGES -> rotatePages(pdfUri, state.selectedPages.sorted(), state.rotationAngle)
+                        EditAction.DELETE_PAGES -> pdfService.deletePages(pdfUri, state.selectedPages.sorted())
+                        EditAction.ROTATE_PAGES -> pdfService.rotatePages(pdfUri, state.selectedPages.sorted(), state.rotationAngle)
                         EditAction.NONE -> throw IllegalStateException("No action selected")
                     }
                 }
@@ -142,61 +144,7 @@ class EditPdfViewModel @Inject constructor(
         _uiState.update { it.copy(error = null) }
     }
 
-    private fun deletePages(pdfUri: Uri, pagesToDelete: List<Int>): File {
-        val tempFile = File.createTempFile("temp_", ".pdf", context.cacheDir)
-        context.contentResolver.openInputStream(pdfUri)?.use { input ->
-            tempFile.outputStream().use { output -> input.copyTo(output) }
-        }
 
-        val document = PDDocument.load(tempFile)
-        try {
-            // Delete pages in reverse order to avoid index shifting
-            pagesToDelete.sortedDescending().forEach { page ->
-                val pageIndex = page - 1
-                if (pageIndex in 0 until document.numberOfPages) {
-                    document.removePage(pageIndex)
-                }
-            }
-
-            val outputFile = File(
-                context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS),
-                "edited_${System.currentTimeMillis()}.pdf"
-            )
-            document.save(outputFile)
-            return outputFile
-        } finally {
-            document.close()
-            tempFile.delete()
-        }
-    }
-
-    private fun rotatePages(pdfUri: Uri, pagesToRotate: List<Int>, angle: Int): File {
-        val tempFile = File.createTempFile("temp_", ".pdf", context.cacheDir)
-        context.contentResolver.openInputStream(pdfUri)?.use { input ->
-            tempFile.outputStream().use { output -> input.copyTo(output) }
-        }
-
-        val document = PDDocument.load(tempFile)
-        try {
-            pagesToRotate.forEach { page ->
-                val pageIndex = page - 1
-                if (pageIndex in 0 until document.numberOfPages) {
-                    val pdfPage = document.getPage(pageIndex)
-                    pdfPage.rotation = (pdfPage.rotation + angle) % 360
-                }
-            }
-
-            val outputFile = File(
-                context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS),
-                "edited_${System.currentTimeMillis()}.pdf"
-            )
-            document.save(outputFile)
-            return outputFile
-        } finally {
-            document.close()
-            tempFile.delete()
-        }
-    }
 
 
 

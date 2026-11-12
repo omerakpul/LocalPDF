@@ -203,4 +203,5 @@
     <string name="error_file_not_found">Dosya bulunamadı</string>
     <string name="error_cannot_open_file">Dosya açılamadı</string>
     <string name="error_invalid_docx">Yalnızca geçerli .docx dosyaları desteklenir</string>
+    <string name="error_merge_total_too_large">Seçilen dosyalar birlikte birleştirilemeyecek kadar büyük. Bu cihazda toplam boyut sınırı %1$s.</string>
 </resources>
